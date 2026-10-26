@@ -7,6 +7,9 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      # Fail if pyproject.toml changed without an updated uv.lock.
+      UV_LOCKED: 1
     steps:
       - uses: actions/checkout@v7
       # setup-uv no longer publishes floating major tags, so pin the release commit.
