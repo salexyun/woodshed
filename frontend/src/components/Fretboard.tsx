@@ -1,10 +1,9 @@
-export type Position = {
-  string: "G" | "B" | "E";
-  fret: number;
-  root?: boolean;
-};
+// Standard numbering: 1 is high E, 6 is low E.
+type GuitarString = 1 | 2 | 3 | 4 | 5 | 6;
 
-const STRINGS = ["G", "B", "E"] as const;
+export type Position = { string: GuitarString; fret: number; root?: boolean };
+
+const STRINGS: GuitarString[] = [6, 5, 4, 3, 2, 1]; // low E on the left
 const FRETS = 5; // triad shapes span at most 4 frets
 const STRING_GAP = 32;
 const FRET_GAP = 36;
@@ -15,7 +14,7 @@ const HEIGHT = 2 * MARGIN + FRETS * FRET_GAP;
 export default function Fretboard({ positions }: { positions: Position[] }) {
   const lowest = Math.min(...positions.map((p) => p.fret));
   const first = Math.max(lowest, 1);
-  const x = (string: Position["string"]) =>
+  const x = (string: GuitarString) =>
     MARGIN + STRINGS.indexOf(string) * STRING_GAP;
   // Open strings sit on the nut; fretted notes sit midway between fret wires.
   const y = (fret: number) =>
