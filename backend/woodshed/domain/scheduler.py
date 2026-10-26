@@ -41,7 +41,9 @@ def _arrangeable(rest: list[Item], after: str | None) -> bool:
 
 
 def due(items: list[Item], now: datetime, limit: int) -> list[Item]:
-    overdue = sorted((i for i in items if i.due_at <= now), key=lambda i: i.due_at)
+    overdue = sorted(
+        (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)
+    )
     pending = overdue[:limit]
     ordered: list[Item] = []
     while pending:
