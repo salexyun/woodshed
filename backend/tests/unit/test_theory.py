@@ -54,6 +54,10 @@ def test_c_shape_matches_expected_frets(quality, inversion, frets):
 @pytest.mark.parametrize("quality", QUALITIES)
 @pytest.mark.parametrize("root", ROOTS)
 def test_shape_is_lowest_playable_voicing_of_its_triad(root, quality, inversion):
+    assert_plays_triad(root, quality, inversion)
+
+
+def assert_plays_triad(root, quality, inversion):
     frets = shape(root, quality, inversion)
     notes = triad(root, quality)
     played = [(open_ + fret) % 12 for open_, fret in zip(OPEN_STRINGS, frets)]
@@ -82,12 +86,16 @@ def test_parse_chord_splits_root_and_quality(symbol, parsed):
     assert parse_chord(symbol) == parsed
 
 
+@pytest.mark.parametrize("symbol", ["C7", "Cm+", "C°m", "H", ""])
+def test_parse_chord_rejects_unknown_symbols(symbol):
+    with pytest.raises(ValueError):
+        parse_chord(symbol)
+
+
 # The chords in the §4 passage table. Checking content.PASSAGES itself belongs to #6.
 @pytest.mark.parametrize("inversion", range(3))
 @pytest.mark.parametrize(
     "symbol", ["C", "F", "G", "D", "A", "E", "Am", "F♯m", "Dm", "C♯°", "C+"]
 )
 def test_passage_chord_produces_valid_shape(symbol, inversion):
-    frets = shape(*parse_chord(symbol), inversion)
-    assert min(frets) >= 0
-    assert max(frets) - min(frets) <= 4
+    assert_plays_triad(*parse_chord(symbol), inversion)
