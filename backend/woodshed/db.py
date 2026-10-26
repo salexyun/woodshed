@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session
 @cache
 def engine() -> Engine:
     # A short timeout lets /healthz answer 503 instead of hanging when Postgres is down.
+    # Neon suspends idle databases and drops pooled connections, hence the pre-ping.
     return create_engine(
-        os.environ["DATABASE_URL"], connect_args={"connect_timeout": 3}
+        os.environ["DATABASE_URL"],
+        connect_args={"connect_timeout": 3},
+        pool_pre_ping=True,
     )
 
 
