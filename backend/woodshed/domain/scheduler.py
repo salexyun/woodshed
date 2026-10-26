@@ -33,11 +33,15 @@ def _quality(item: Item) -> str | None:
     return rest.partition(":")[0] if kind == "shape" else None
 
 
-def _arrangeable(rest: list[Item], after: str | None) -> bool:
-    # A quality filling more than every other slot of `rest` must repeat; one slot
-    # fewer when `rest` follows that quality. Passages have no quality.
-    counts = Counter(q for i in rest if (q := _quality(i)) is not None)
-    return all(n <= (len(rest) + (q != after)) // 2 for q, n in counts.items())
+def _repeats(pick: Item, pending: list[Item], last: str | None) -> int:
+    """Fewest repeated qualities left in the session if `pick` comes next."""
+    q = _quality(pick)
+    rest = [i for i in pending if i is not pick]
+    counts = Counter(k for i in rest if (k := _quality(i)) is not None)
+    # n items of one quality need n - 1 others between them, one more if the first
+    # follows `pick`. Passages have no quality, so they separate anything.
+    forced = (2 * n - len(rest) - 1 + (k == q) for k, n in counts.items())
+    return (q is not None and q == last) + max([0, *forced])
 
 
 def due(items: list[Item], now: datetime, limit: int) -> list[Item]:
@@ -48,15 +52,8 @@ def due(items: list[Item], now: datetime, limit: int) -> list[Item]:
     ordered: list[Item] = []
     while pending:
         last = _quality(ordered[-1]) if ordered else None
-        pick = next(
-            (
-                i
-                for i in pending
-                if (last is None or _quality(i) != last)
-                and _arrangeable([j for j in pending if j is not i], _quality(i))
-            ),
-            pending[0],
-        )
+        # min keeps the most overdue item among equally good picks.
+        pick = min(pending, key=lambda i: _repeats(i, pending, last))
         pending.remove(pick)
         ordered.append(pick)
     return ordered
