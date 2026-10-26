@@ -4,14 +4,14 @@ Woodshed is built by five Claude Code subagents (`.claude/agents/`) and one huma
 
 ## Roles
 
-| Role | Job | Input → Output | Tools |
-| --- | --- | --- | --- |
-| **planner** | Turns the spec into small issues with testable acceptance criteria. Orders them by dependency. | `docs/plans.md` → issues | Read, `gh issue` |
-| **tester** | Writes failing tests from an issue's acceptance criteria | Issue → tests on the issue branch | Read/write tests, Bash, Context7 |
-| **implementer** | Writes the minimum code that makes the tests pass, then opens the PR | Branch with tests → PR | Read/write, Bash, Context7, Playwright |
-| **reviewer** | Checks the PR against the acceptance criteria, the spec and the code style | PR → verdict comment | Read-only, `gh pr`, Playwright, `/code-review` |
-| **on-call** | Responds to production alerts: diagnoses, fixes, opens a PR | Alert + evidence → fix PR + report | Read/write, Bash, Grafana MCP (read-only) |
-| **human** | Sets priorities, merges PRs, approves prod deploys, holds the secrets | PR → merge | Everything |
+| Role | Job | Input → Output | Tools | Skills |
+| --- | --- | --- | --- | --- |
+| **planner** | Turns the spec into small issues with testable acceptance criteria. Orders them by dependency. | `docs/plans.md` → issues | Read, `gh issue` | — |
+| **tester** | Writes failing tests from an issue's acceptance criteria | Issue → tests on the issue branch | Read/write tests, Bash, Context7 | — |
+| **implementer** | Writes the minimum code that makes the tests pass, then opens the PR | Branch with tests → PR | Read/write, Bash, Context7, Playwright | `simplify` |
+| **reviewer** | Checks the PR against the acceptance criteria, the spec and the code style | PR → verdict comment | Read, Bash, `gh pr`, Playwright | `code-review` |
+| **on-call** | Responds to production alerts: diagnoses, fixes, opens a PR | Alert + evidence → fix PR + report | Read/write, Bash, Grafana MCP (read-only) | — |
+| **human** | Sets priorities, merges PRs, approves prod deploys, holds the secrets | PR → merge | Everything | — |
 
 ## Flow
 
@@ -49,13 +49,13 @@ Every agent comments on the issue when it finishes, so the tracker shows who did
 
 ## Guardrails
 
-- Only the human merges and deploys to prod. `.claude/settings.json` denies `gh pr merge`, force pushes and manual workflow dispatches for every agent. Branch protection on `main` requires CI to pass.
-- The reviewer has no write tools. The on-call agent's Grafana access is read-only (`--disable-write`).
+- Only the human merges and deploys to prod. `.claude/settings.json` denies `gh pr merge`, `gh api`, workflow dispatches, force pushes and pushes to `main` for every agent. Those rules match command text, so the hard stops are on GitHub: branch protection on `main` (CI becomes a required check in #3) and environment approval on prod deploys.
+- The reviewer has no Edit or Write tools. It uses Bash only to check out the branch, run `make lint` and `make test`, and comment; it never commits or pushes. The on-call agent's Grafana access is read-only (`--disable-write`).
 - Secrets live in GitHub and Render, never in the repo or in an agent's prompt.
 
 ## Parallel work
 
-Independent issues run in parallel, each agent in its own git worktree (`isolation: worktree`). Issues are grouped into waves by dependency:
+Independent issues run in parallel. The session that dispatches them spawns each tester and implementer with `isolation: "worktree"`, so each works in its own checkout. Issues are grouped into waves by dependency:
 
 | Wave | Issues |
 | --- | --- |

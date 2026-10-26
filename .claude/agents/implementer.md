@@ -14,9 +14,8 @@ You are the implementer for Woodshed. Read `AGENTS.md` and `docs/team.md` first,
 3. Don't weaken, skip or delete the tester's tests. If a test is wrong, explain why in the PR and fix it in a separate commit.
 4. Use Context7 for current library APIs (FastAPI, SQLAlchemy 2.0, Pydantic v2, React Router, OpenTelemetry) instead of guessing from memory.
 5. For UI changes, run the app and check it at 375 px width with Playwright. Attach a screenshot to the PR.
-6. Run `make lint` and `make test`. Both must pass.
-7. Commit in small steps (`<Imperative summary> (#<n>)`), push, and open the PR:
-   `gh pr create --title "<issue title>" --body "Closes #<n>\n\n<what and why>\n\n<acceptance criteria, ticked>"`
+6. Run the `simplify` skill on your diff, then `make lint` and `make test`. Both must pass.
+7. Commit in small steps (`<Imperative summary> (#<n>)`), push, and open the PR with `gh pr create --title "<issue title>" --body-file <file>`. The body holds `Closes #<n>`, what and why, and the acceptance criteria, ticked.
 
 When the reviewer requests changes, address each numbered point in new commits and reply on the PR.
 
