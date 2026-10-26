@@ -84,9 +84,46 @@ def test_due_repeats_quality_when_interleaving_is_impossible():
     ]
 
 
+def test_due_defers_most_overdue_item_when_that_avoids_a_repeat():
+    items = [
+        item("shape:major:1", 5),
+        item("shape:minor:1", 4),
+        item("shape:minor:2", 3),
+    ]
+    assert [i.id for i in due(items, NOW, 10)] == [
+        "shape:minor:1",
+        "shape:major:1",
+        "shape:minor:2",
+    ]
+
+
+def test_due_treats_passages_as_having_no_shared_quality():
+    items = [
+        item("passage:a", 5),
+        item("passage:b", 4),
+        item("shape:minor:1", 3),
+        item("shape:minor:2", 2),
+    ]
+    assert [i.id for i in due(items, NOW, 10)] == [
+        "passage:a",
+        "shape:minor:1",
+        "passage:b",
+        "shape:minor:2",
+    ]
+
+
+def test_due_allows_consecutive_passages():
+    items = [item("passage:a", 5), item("passage:b", 4)]
+    assert [i.id for i in due(items, NOW, 10)] == ["passage:a", "passage:b"]
+
+
 @pytest.mark.parametrize(
     ("reviews", "root"),
-    enumerate(["C", "F", "B♭", "E♭", "A♭", "D♭", "G♭", "B", "E", "A", "D", "G", "C"]),
+    list(
+        enumerate(
+            ["C", "F", "B♭", "E♭", "A♭", "D♭", "G♭", "B", "E", "A", "D", "G", "C"]
+        )
+    ),
 )
 def test_review_root_steps_through_cycle_of_fourths_from_c(reviews, root):
     assert review_root(reviews) == root
