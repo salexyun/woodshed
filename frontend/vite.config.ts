@@ -4,5 +4,6 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  test: { environment: "jsdom" },
+  // Testing Library registers its afterEach cleanup only when globals are on.
+  test: { environment: "jsdom", globals: true },
 });
