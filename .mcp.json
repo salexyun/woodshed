@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "grafana": {
+      "command": "uvx",
+      "args": ["mcp-grafana", "--disable-write"],
+      "env": {
+        "GRAFANA_URL": "${GRAFANA_URL:-http://localhost:3000}",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "${GRAFANA_SERVICE_ACCOUNT_TOKEN:-}"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CONTEXT7_API_KEY:-}"
+      }
+    }
+  }
+}
