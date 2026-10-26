@@ -33,7 +33,7 @@ class Item(Base):
     created_at: Mapped[datetime]
 
 
-class Session(Base):
+class PracticeSession(Base):
     __tablename__ = "session"
 
     id: Mapped[int] = mapped_column(primary_key=True)
