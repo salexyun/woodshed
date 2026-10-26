@@ -2,7 +2,10 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
-LESSON_ORDER = ("major", "minor", "diminished", "augmented")
+from woodshed.domain.theory import SEMITONES
+
+# SEMITONES lists qualities most to least common, which is the lesson order.
+LESSON_ORDER = tuple(SEMITONES)
 PLACED_BOX = 2
 
 
@@ -25,16 +28,12 @@ class Placement:
     items: dict[str, int]
 
 
+PASSED = Check(Playing.GOT_IT, theory_correct=True)
+
+
 def place(claimed_qualities: Iterable[str], checks: Mapping[str, Check]) -> Placement:
     claimed = set(claimed_qualities)
-    known = tuple(
-        q
-        for q in LESSON_ORDER
-        if q in claimed
-        and (c := checks.get(q))
-        and c.playing == Playing.GOT_IT
-        and c.theory_correct
-    )
+    known = tuple(q for q in LESSON_ORDER if q in claimed and checks.get(q) == PASSED)
     return Placement(
         known=known,
         lesson=next((q for q in LESSON_ORDER if q not in known), None),
