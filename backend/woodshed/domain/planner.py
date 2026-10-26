@@ -54,7 +54,11 @@ def plan(
             # Never-rated passages count as the least recently practiced.
             stalest = min(
                 passages,
-                key=lambda i: (i.last_rated_at is not None, i.last_rated_at or now),
+                key=lambda i: (
+                    i.last_rated_at is not None,
+                    i.last_rated_at or now,
+                    i.id,
+                ),
                 default=None,
             )
             return reviews + (_passage(stalest.id) if stalest else [])
