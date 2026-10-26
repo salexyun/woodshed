@@ -2,11 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
+from woodshed.domain.placement import LESSON_ORDER
 from woodshed.domain.scheduler import Item, due, quality
-from woodshed.domain.theory import SEMITONES
 
 Action = Literal["today", "continue", "test_me", "pick_a_song"]
-LESSON_ORDER = tuple(SEMITONES)
 TODAY_REVIEWS = 3
 TEST_ME_ITEMS = 10
 
