@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 
 import App from "./App";
 
@@ -11,6 +11,6 @@ describe("App", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole("heading", { name: /woodshed/i })).toBeTruthy();
+    screen.getByRole("heading", { name: /woodshed/i });
   });
 });
