@@ -1,5 +1,8 @@
 .PHONY: test lint
 
+# Integration tests need Postgres: run `docker compose up -d --wait db` first.
+export TEST_DATABASE_URL ?= postgresql://woodshed:woodshed@localhost:5432/woodshed_test
+
 frontend/node_modules: frontend/package-lock.json
 	cd frontend && npm ci
 

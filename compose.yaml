@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: woodshed
+      POSTGRES_PASSWORD: woodshed
+      POSTGRES_DB: woodshed
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: pg_isready -U woodshed
+      interval: 2s
+      retries: 15
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    configs:
+      # Integration tests use their own database so they never touch dev data.
+      - source: create-test-db
+        target: /docker-entrypoint-initdb.d/create-test-db.sql
+
+configs:
+  create-test-db:
+    content: CREATE DATABASE woodshed_test;
+
+volumes:
+  pgdata:
