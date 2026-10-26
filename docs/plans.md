@@ -133,6 +133,7 @@ A shape review names a root, e.g. "Play F♯ minor, 1st inversion." Roots rotate
   - **challenging**: stay in the same box
   - **unfamiliar**: go back to box 1
 - A new item starts in box 1, and its first rating applies the same rule.
+- A new item is due as soon as it's created. Placed shapes are the exception (§5.3).
 - `due_at = rated_at + interval(box)`. An item is due when `due_at ≤ now`.
 - Due items are ordered by how overdue they are, most overdue first. Where possible, consecutive reviews don't repeat the same quality (interleaving).
 
