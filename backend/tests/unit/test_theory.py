@@ -1,4 +1,5 @@
 import pytest
+
 from woodshed.domain.theory import parse_chord, shape, triad
 
 QUALITIES = ["major", "minor", "diminished", "augmented"]
