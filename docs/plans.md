@@ -103,7 +103,7 @@ A passage unlocks when its lesson is completed. Diagrams are shown for every cho
 
 ### Challenge cards
 
-A fixed pool of variations, one shown per lesson or passage. Examples:
+A fixed pool of variations, stored as plain strings. Whoever builds the session picks one for each lesson or passage. Examples:
 
 - "Use only the nearest shape: no jumps."
 - "Same chords, reggae offbeat strum."
@@ -118,6 +118,8 @@ The scheduler tracks two kinds of item:
 
 - **shape**: one quality in one inversion, e.g. `shape:minor:1` (12 total)
 - **passage**: one song or exercise, e.g. `passage:let-it-be` (7 total)
+
+Inversions are numbered from 0 in code and item IDs: `shape:minor:0` is root position and `shape:minor:1` the 1st inversion.
 
 An item is created when its lesson is completed, or when its quality is placed as known at onboarding. Items that have not been created yet are never scheduled.
 
@@ -143,7 +145,7 @@ A shape review names a root, e.g. "Play F♯ minor, 1st inversion." Roots rotate
 2. **Check:** for each quality the player claims to know:
    - a playing prompt (root position, root from the rotation): the player plays it, reveals the diagram, then self-grades *got it / close / no idea*
    - a multiple-choice theory question: "Which notes make up A minor?"
-3. **Placement:** a quality counts as known only if both checks pass (*got it* + correct answer). Its 3 shape items are created in box 2. The starting lesson is the first quality in lesson order that isn't known.
+3. **Placement:** a quality counts as known only if both checks pass (*got it* + correct answer). Its 3 shape items are created in box 2, due 3 days later (box 2's interval), and its lesson's passage items are created as if the lesson were completed. The starting lesson is the first quality in lesson order that isn't known.
 4. **Habit setup:**
    - a cue that completes "After ___, I'll practice." (free text, e.g. "after dinner")
    - a weekly goal in days (1–7, default 4)
@@ -170,10 +172,12 @@ Actions:
 
 Every session starts with a length choice:
 
-- **25 min**: the timer counts down. At 0 it offers *wrap up* or *keep going*, which switches to open-ended.
+- **25 min**: the timer counts down. At 0 it offers *wrap up* or *keep going*, which switches to open-ended and keeps counting total session time from 25:00.
 - **Open-ended**: the timer counts up. At 60 minutes it suggests stopping: "diminishing returns; let it consolidate."
 
 The timer advises; it never ends a session by itself.
+
+The planner returns an ordered list of steps: *review*, *lesson*, *passage*, *challenge* or *theory*. A lesson step brings its own passage and challenge card; a standalone passage is followed by a challenge card. In *Test me*, theory questions come after the items.
 
 ### 5.5 Session flow
 
@@ -185,7 +189,7 @@ Ratings are saved as they happen, so an abandoned session keeps them. A lesson i
 
 ### 5.6 Consistency
 
-- **Practice day:** a local date (in the profile's timezone) with at least one finished session that has at least one rating.
+- **Practice day:** a local date (in the profile's timezone) with at least one finished session that has at least one rating. A session's date is the local date of its `finished_at`.
 - **Streak:** the number of practice days in the current run. A run allows gaps of one missed day and ends after two consecutive missed days. The streak counts as current if the last practice day was today, yesterday or the day before.
 - **Weekly progress:** practice days in the current ISO week (Mon–Sun) against the weekly goal.
 
