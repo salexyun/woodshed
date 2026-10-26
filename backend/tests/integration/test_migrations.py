@@ -16,7 +16,6 @@ ALEMBIC_INI = Path(__file__).parents[2] / "alembic.ini"
 def alembic(database_url, monkeypatch):
     monkeypatch.setenv("DATABASE_URL", database_url)
     config = Config(ALEMBIC_INI)
-    config.set_main_option("sqlalchemy.url", database_url)
     yield config
     # Later integration tests rely on the schema, so always leave it at head.
     command.upgrade(config, "head")
