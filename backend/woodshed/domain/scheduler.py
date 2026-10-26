@@ -17,6 +17,8 @@ class Rating(StrEnum):
 class Item:
     id: str
     due_at: datetime
+    box: int = 1
+    last_rated_at: datetime | None = None
 
 
 def rate(box: int, rating: Rating, now: datetime) -> tuple[int, datetime]:
@@ -28,16 +30,16 @@ def rate(box: int, rating: Rating, now: datetime) -> tuple[int, datetime]:
     return box, now + timedelta(days=INTERVAL_DAYS[box - 1])
 
 
-def _quality(item: Item) -> str | None:
+def quality(item: Item) -> str | None:
     kind, _, rest = item.id.partition(":")
     return rest.partition(":")[0] if kind == "shape" else None
 
 
 def _repeats(pick: Item, pending: list[Item], last: str | None) -> int:
     """Fewest repeated qualities left in the session if `pick` comes next."""
-    q = _quality(pick)
+    q = quality(pick)
     rest = [i for i in pending if i is not pick]
-    counts = Counter(k for i in rest if (k := _quality(i)) is not None)
+    counts = Counter(k for i in rest if (k := quality(i)) is not None)
     # n items of one quality need n - 1 others between them, one more if the first
     # follows `pick`. Passages have no quality, so they separate anything.
     forced = (2 * n - len(rest) - 1 + (k == q) for k, n in counts.items())
@@ -51,7 +53,7 @@ def due(items: list[Item], now: datetime, limit: int) -> list[Item]:
     pending = overdue[:limit]
     ordered: list[Item] = []
     while pending:
-        last = _quality(ordered[-1]) if ordered else None
+        last = quality(ordered[-1]) if ordered else None
         # min keeps the most overdue item among equally good picks.
         pick = min(pending, key=lambda i: _repeats(i, pending, last))
         pending.remove(pick)
