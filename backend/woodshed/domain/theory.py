@@ -1,3 +1,5 @@
+import re
+
 LETTERS = "CDEFGAB"
 NATURALS = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 SEMITONES = {
@@ -7,6 +9,7 @@ SEMITONES = {
     "augmented": (4, 8),
 }
 SYMBOLS = {"m": "minor", "°": "diminished", "+": "augmented"}
+CHORD = re.compile(r"([A-G][♯♭]?)([m°+]?)")
 OPEN_STRINGS = (7, 11, 4)  # G, B, E
 MAX_SPAN = 4
 
@@ -48,5 +51,7 @@ def shape(root: str, quality: str, inversion: int) -> tuple[int, int, int]:
 
 
 def parse_chord(symbol: str) -> tuple[str, str]:
-    root = symbol.rstrip("".join(SYMBOLS))
-    return root, SYMBOLS.get(symbol[len(root) :], "major")
+    if not (match := CHORD.fullmatch(symbol)):
+        raise ValueError(f"unknown chord symbol: {symbol!r}")
+    root, suffix = match.groups()
+    return root, SYMBOLS.get(suffix, "major")
