@@ -53,8 +53,8 @@ LESSONS = (
         "two major 3rds stacked. It sounds restless and unresolved, and pulls "
         "forward: in C C+ F the raised 5th climbs into the next chord. It's "
         "symmetric: every note is 4 frets from the next, so all 3 inversions "
-        "are the same shape moved 4 frets. In C: 5-5-4, 9-9-8, 13-13-12. That "
-        "one shape also plays E+ and G♯+.",
+        "are the same shape moved 4 frets. In C: 5-5-4, 9-9-8, then 1-1-0 (or "
+        "13-13-12). That one shape also plays E+ and G♯+.",
     ),
 )
 
