@@ -34,6 +34,7 @@ def upgrade() -> None:
         sa.Column("weekly_goal_days", sa.Integer(), nullable=False),
         sa.Column("timezone", sa.String(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.CheckConstraint("id = 1", name="profile_single_row"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(

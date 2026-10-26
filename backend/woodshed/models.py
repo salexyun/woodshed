@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import ClassVar
 
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -11,6 +11,8 @@ class Base(DeclarativeBase):
 
 class Profile(Base):
     __tablename__ = "profile"
+    # There is one player, so a retried onboarding must not create a second profile.
+    __table_args__ = (CheckConstraint("id = 1", name="profile_single_row"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     years_playing: Mapped[int]
