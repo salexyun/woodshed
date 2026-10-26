@@ -67,6 +67,8 @@ def plan(
         case "test_me":
             return _test_me(items, last_session, now)
         case "pick_a_song":
+            if passage is None or not passage.startswith("passage:"):
+                raise ValueError(f"{passage!r} is not a passage")
             # A passage unlocks when its item is created, so no item means locked.
             if passage not in {i.id for i in items}:
                 raise ValueError(f"passage {passage!r} is locked")
