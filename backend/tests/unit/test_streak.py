@@ -2,6 +2,7 @@ from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
+
 from woodshed.domain.streak import Session, practice_days, streak, week_progress
 
 NEW_YORK = ZoneInfo("America/New_York")
