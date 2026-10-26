@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,7 +19,7 @@ def database_url() -> str:
     return url
 
 
-def client_for(url: str) -> TestClient:
+def client_for(url: str) -> Iterator[TestClient]:
     engine = create_engine(url, connect_args={"connect_timeout": 1})
 
     def session():
@@ -26,18 +27,18 @@ def client_for(url: str) -> TestClient:
             yield s
 
     app.dependency_overrides[get_session] = session
-    return TestClient(app)
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+    engine.dispose()
 
 
 @pytest.fixture
 def client(database_url):
-    yield client_for(database_url)
-    app.dependency_overrides.clear()
+    yield from client_for(database_url)
 
 
 @pytest.fixture
 def unreachable_client(database_url):
     # Nothing listens on port 1, so the database is down for this client only.
     url = make_url(database_url).set(port=1)
-    yield client_for(url.render_as_string(hide_password=False))
-    app.dependency_overrides.clear()
+    yield from client_for(url.render_as_string(hide_password=False))
