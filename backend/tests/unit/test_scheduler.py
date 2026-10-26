@@ -97,6 +97,21 @@ def test_due_defers_most_overdue_item_when_that_avoids_a_repeat():
     ]
 
 
+def test_due_keeps_unavoidable_repeats_to_a_minimum():
+    items = [
+        item("shape:major:0", 4),
+        item("shape:minor:1", 3),
+        item("shape:minor:2", 2),
+        item("shape:minor:3", 1),
+    ]
+    assert [i.id for i in due(items, NOW, 10)] == [
+        "shape:minor:1",
+        "shape:major:0",
+        "shape:minor:2",
+        "shape:minor:3",
+    ]
+
+
 def test_due_treats_passages_as_having_no_shared_quality():
     items = [
         item("passage:a", 5),
