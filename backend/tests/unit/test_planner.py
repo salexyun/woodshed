@@ -94,6 +94,18 @@ def test_todays_plan_skips_passage_already_due_for_review():
     ]
 
 
+def test_todays_plan_breaks_ties_among_never_rated_passages_by_id():
+    passages = [
+        Item("passage:stand-by-me", NOW + timedelta(days=1)),
+        Item("passage:la-bamba", NOW + timedelta(days=2)),
+        item("passage:let-it-be", -1, days_since_rated=30),
+    ]
+    assert plan("today", passages, ALL_LESSONS, [], NOW) == [
+        Step("passage", "passage:la-bamba"),
+        Step("challenge", "passage:la-bamba"),
+    ]
+
+
 @pytest.mark.parametrize(
     ("completed", "lesson"), [(set(), "major"), ({"major", "minor"}, "diminished")]
 )
