@@ -3,30 +3,30 @@ import { describe, expect, it } from "vitest";
 
 import Fretboard, { type Position } from "./Fretboard";
 
-// C major on G-B-E (§4): root position 5-5-3, 2nd inversion 0-1-0.
+// C major on G-B-E = strings 3-2-1 (§4): root position 5-5-3, 2nd inversion 0-1-0.
 const cRoot: Position[] = [
-  { string: "G", fret: 5, root: true },
-  { string: "B", fret: 5 },
-  { string: "E", fret: 3 },
+  { string: 3, fret: 5, root: true },
+  { string: 2, fret: 5 },
+  { string: 1, fret: 3 },
 ];
 const cOpen: Position[] = [
-  { string: "G", fret: 0 },
-  { string: "B", fret: 1, root: true },
-  { string: "E", fret: 0 },
+  { string: 3, fret: 0 },
+  { string: 2, fret: 1, root: true },
+  { string: 1, fret: 0 },
 ];
 
 const dots = () =>
   screen.getAllByTestId("dot").map((dot) => ({
-    string: dot.dataset.string,
+    string: Number(dot.dataset.string),
     fret: Number(dot.dataset.fret),
     root: dot.dataset.root === "true",
   }));
 
 describe("Fretboard", () => {
-  it("renders an svg with 3 strings", () => {
+  it("renders an svg with 6 strings", () => {
     const { container } = render(<Fretboard positions={cRoot} />);
     expect(container.querySelector("svg")).not.toBeNull();
-    expect(screen.getAllByTestId("string")).toHaveLength(3);
+    expect(screen.getAllByTestId("string")).toHaveLength(6);
   });
 
   it.each([
@@ -40,8 +40,8 @@ describe("Fretboard", () => {
   });
 
   it.each([
-    ["C root position", cRoot, "G"],
-    ["open C shape", cOpen, "B"],
+    ["C root position", cRoot, 3],
+    ["open C shape", cOpen, 2],
   ])("marks only the root for %s", (_, positions, rootString) => {
     render(<Fretboard positions={positions} />);
     expect(dots().filter((d) => d.root).map((d) => d.string)).toEqual([
