@@ -178,3 +178,9 @@ def test_pick_a_song_is_chosen_passage_plus_challenge_card():
 def test_pick_a_song_rejects_locked_passage():
     with pytest.raises(ValueError):
         plan("pick_a_song", DUE, {"major"}, [], NOW, passage="passage:let-it-be")
+
+
+@pytest.mark.parametrize("passage", ["shape:major:1", None])
+def test_pick_a_song_rejects_anything_but_a_passage(passage):
+    with pytest.raises(ValueError, match="not a passage"):
+        plan("pick_a_song", DUE, {"major"}, [], NOW, passage=passage)
