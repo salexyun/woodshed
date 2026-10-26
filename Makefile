@@ -1,9 +1,12 @@
 .PHONY: test lint
 
-test:
-	cd backend && uv run pytest
-	cd frontend && npm test
+frontend/node_modules: frontend/package-lock.json
+	cd frontend && npm ci
 
-lint:
+test: frontend/node_modules
+	cd backend && uv run pytest
+	cd frontend && npm exec --no -- vitest run
+
+lint: frontend/node_modules
 	cd backend && uv run ruff check && uv run ruff format --check
-	cd frontend && npx tsc --noEmit
+	cd frontend && npm exec --no -- tsc --noEmit
