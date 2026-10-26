@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -32,15 +33,27 @@ def _quality(item: Item) -> str | None:
     return rest.partition(":")[0] if kind == "shape" else None
 
 
+def _arrangeable(rest: list[Item], after: str | None) -> bool:
+    # A quality filling more than every other slot of `rest` must repeat; one slot
+    # fewer when `rest` follows that quality. Passages have no quality.
+    counts = Counter(q for i in rest if (q := _quality(i)) is not None)
+    return all(n <= (len(rest) + (q != after)) // 2 for q, n in counts.items())
+
+
 def due(items: list[Item], now: datetime, limit: int) -> list[Item]:
     overdue = sorted((i for i in items if i.due_at <= now), key=lambda i: i.due_at)
     pending = overdue[:limit]
     ordered: list[Item] = []
     while pending:
-        # Passages have no quality, so they never repeat the previous one.
         last = _quality(ordered[-1]) if ordered else None
         pick = next(
-            (i for i in pending if last is None or _quality(i) != last), pending[0]
+            (
+                i
+                for i in pending
+                if (last is None or _quality(i) != last)
+                and _arrangeable([j for j in pending if j is not i], _quality(i))
+            ),
+            pending[0],
         )
         pending.remove(pick)
         ordered.append(pick)
