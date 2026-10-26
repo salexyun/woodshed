@@ -65,6 +65,20 @@ describe("Timer countdown", () => {
     expect(keepGoing()).toBeNull();
     expect(screen.getByRole("timer").textContent).not.toBe(before);
   });
+
+  it("keeps counting total session time after keep going, so the hint comes at 60 minutes total", () => {
+    render(<Timer mode="countdown" onWrapUp={vi.fn()} />);
+    advance(25 * MINUTE);
+    fireEvent.click(keepGoing()!);
+    screen.getByText("25:00");
+
+    advance(35 * MINUTE - 1000);
+    expect(screen.queryByText(STOP_HINT)).toBeNull();
+
+    advance(1000);
+    screen.getByText("60:00");
+    screen.getByText(STOP_HINT);
+  });
 });
 
 describe("Timer count-up", () => {
