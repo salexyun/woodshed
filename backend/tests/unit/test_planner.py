@@ -81,6 +81,19 @@ def test_todays_plan_when_all_lessons_done_and_nothing_due_is_passage_only():
     ]
 
 
+def test_todays_plan_skips_passage_already_due_for_review():
+    passages = [
+        item("passage:let-it-be", 1, days_since_rated=9),
+        item("passage:stand-by-me", -1, days_since_rated=4),
+        item("passage:la-bamba", -5, days_since_rated=2),
+    ]
+    assert plan("today", passages, ALL_LESSONS, [], NOW) == [
+        Step("review", "passage:let-it-be"),
+        Step("passage", "passage:stand-by-me"),
+        Step("challenge", "passage:stand-by-me"),
+    ]
+
+
 @pytest.mark.parametrize(
     ("completed", "lesson"), [(set(), "major"), ({"major", "minor"}, "diminished")]
 )
