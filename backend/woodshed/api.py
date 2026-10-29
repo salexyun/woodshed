@@ -46,7 +46,7 @@ def onboard(answers: schemas.Onboarding, db: Db, now: Now) -> Profile:
     profile = Profile(
         id=1,
         created_at=now,
-        **answers.model_dump(include=set(schemas.Profile.model_fields)),
+        **answers.model_dump(exclude={"claimed_qualities", "checks"}),
     )
     db.add(profile)
     db.add_all(
