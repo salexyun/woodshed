@@ -39,3 +39,20 @@ class Onboarding(Profile):
 class ProfileUpdate(BaseModel):
     cue: Cue | None = None
     weekly_goal_days: WeeklyGoal | None = None
+
+
+class Lesson(BaseModel):
+    quality: Quality
+    explanation: str
+    shapes: list[tuple[int, int, int]]
+    passages: list[str]
+
+
+class Passage(BaseModel):
+    id: str
+    title: str
+    artist: str | None
+    kind: Literal["song", "exercise"]
+    chords: list[str]
+    lesson: Quality
+    unlocked: bool
