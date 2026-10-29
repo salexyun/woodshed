@@ -4,7 +4,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
+from woodshed import db as woodshed_db
 from woodshed.api import get_now
 from woodshed.content import PASSAGES
 from woodshed.main import app
@@ -202,3 +205,20 @@ def test_cue_is_never_logged(client, db, caplog):
     client.get("/api/profile")
     assert CUE not in caplog.text
     assert "after the late news" not in caplog.text
+
+
+@pytest.fixture
+def app_engine(database_url, monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    woodshed_db.engine.cache_clear()
+    yield woodshed_db.engine()
+    woodshed_db.engine().dispose()
+    woodshed_db.engine.cache_clear()
+
+
+def test_failed_profile_write_keeps_the_cue_out_of_the_error(client, db, app_engine):
+    onboard(client)
+    with Session(app_engine) as session, pytest.raises(IntegrityError) as error:
+        session.add(Profile(id=1, created_at=NOW, **PROFILE | {"cue": "SECRET-CUE"}))
+        session.commit()
+    assert "SECRET-CUE" not in str(error.value)
