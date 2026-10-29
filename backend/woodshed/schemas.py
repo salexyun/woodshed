@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -39,3 +40,20 @@ class Onboarding(Profile):
 class ProfileUpdate(BaseModel):
     cue: Cue | None = None
     weekly_goal_days: WeeklyGoal | None = None
+
+
+class Home(BaseModel):
+    streak: int
+    week_days: int
+    weekly_goal_days: int
+    due_count: int
+    next_lesson: Quality | None
+    cue: str
+
+
+class ProgressItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    box: int
+    due_at: datetime
