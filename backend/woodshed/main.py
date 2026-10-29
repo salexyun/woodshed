@@ -5,9 +5,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from woodshed.api import router
 from woodshed.db import get_session
 
 app = FastAPI(title="Woodshed")
+app.include_router(router)
 
 
 @app.get("/healthz")
