@@ -114,3 +114,7 @@ def test_passage_returns_its_content_and_unlock_state(client, db, completed):
 
 def test_unknown_passage_is_404(client, db):
     assert client.get("/api/passages/wonderwall").status_code == 404
+
+
+def test_unknown_lesson_is_404(client, db):
+    assert client.get("/api/lessons/suspended").status_code == 404
