@@ -135,6 +135,7 @@ def test_no_qualities_placed_creates_no_items(client, db):
         {"checks": {"major": {"playing": "nailed_it", "theory_correct": True}}},
         {"timezone": "Not/A_Zone"},
         {"cue": None},
+        {"cue": ""},
     ],
 )
 def test_invalid_onboarding_is_422_and_creates_nothing(client, db, changes):
@@ -192,6 +193,12 @@ def test_patch_goal_outside_1_to_7_is_422(client, db, goal):
         client.patch("/api/profile", json={"weekly_goal_days": goal}).status_code == 422
     )
     assert client.get("/api/profile").json()["weekly_goal_days"] == 5
+
+
+def test_patch_empty_cue_is_422(client, db):
+    onboard(client)
+    assert client.patch("/api/profile", json={"cue": ""}).status_code == 422
+    assert client.get("/api/profile").json()["cue"] == CUE
 
 
 def test_patch_profile_is_404_before_onboarding(client, db):

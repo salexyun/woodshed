@@ -18,6 +18,7 @@ Quality = Literal["major", "minor", "diminished", "augmented"]
 StuckOn = Literal["same_material", "what_to_practice", "technique", "theory"]
 WeeklyGoal = Annotated[int, Field(ge=1, le=7)]
 Timezone = Annotated[str, AfterValidator(_known_timezone)]
+Cue = Annotated[str, Field(min_length=1)]
 
 
 class Profile(BaseModel):
@@ -25,7 +26,7 @@ class Profile(BaseModel):
 
     years_playing: Annotated[int, Field(ge=0)]
     stuck_on: StuckOn
-    cue: str
+    cue: Cue
     weekly_goal_days: WeeklyGoal = 4
     timezone: Timezone
 
@@ -36,5 +37,5 @@ class Onboarding(Profile):
 
 
 class ProfileUpdate(BaseModel):
-    cue: str | None = None
+    cue: Cue | None = None
     weekly_goal_days: WeeklyGoal | None = None
