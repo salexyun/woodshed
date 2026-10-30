@@ -42,6 +42,23 @@ class ProfileUpdate(BaseModel):
     weekly_goal_days: WeeklyGoal | None = None
 
 
+class Lesson(BaseModel):
+    quality: Quality
+    explanation: str
+    shapes: list[tuple[int, int, int]]
+    passages: list[str]
+
+
+class Passage(BaseModel):
+    id: str
+    title: str
+    artist: str | None
+    kind: Literal["song", "exercise"]
+    chords: list[str]
+    lesson: Quality
+    unlocked: bool
+
+
 class Home(BaseModel):
     streak: int
     week_days: int

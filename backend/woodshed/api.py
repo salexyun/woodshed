@@ -1,4 +1,4 @@
-from collections import Counter
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from zoneinfo import ZoneInfo
@@ -7,12 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from woodshed import schemas
-from woodshed.content import PASSAGES, passage_item_id
+from woodshed import content, schemas
+from woodshed.content import LESSONS, PASSAGES, passage_item_id, shape_item_id
 from woodshed.db import get_session
 from woodshed.domain import scheduler, streak
 from woodshed.domain.placement import LESSON_ORDER, place
 from woodshed.domain.scheduler import INTERVAL_DAYS
+from woodshed.domain.theory import shape
 from woodshed.models import Item, PracticeSession, Profile, Rating
 
 
@@ -76,6 +77,54 @@ def update_profile(changes: schemas.ProfileUpdate, db: Db) -> Profile:
     return profile
 
 
+def _lesson(lesson: content.Lesson) -> schemas.Lesson:
+    return schemas.Lesson(
+        quality=lesson.quality,
+        explanation=lesson.explanation,
+        shapes=[shape("C", lesson.quality, inversion) for inversion in range(3)],
+        passages=[p.id for p in PASSAGES if p.lesson == lesson.quality],
+    )
+
+
+@router.get("/lessons")
+def list_lessons() -> list[schemas.Lesson]:
+    return [_lesson(lesson) for lesson in LESSONS]
+
+
+@router.get("/lessons/{quality}")
+def get_lesson(quality: str) -> schemas.Lesson:
+    if lesson := next((x for x in LESSONS if x.quality == quality), None):
+        return _lesson(lesson)
+    raise HTTPException(404, "unknown lesson")
+
+
+def _completed_lessons(db: Session) -> set[str]:
+    # A lesson is completed when its 3 shape items exist (§8).
+    shapes = set(db.scalars(select(Item.id).where(Item.kind == "shape")))
+    return {
+        lesson.quality
+        for lesson in LESSONS
+        if all(shape_item_id(lesson.quality, i) in shapes for i in range(3))
+    }
+
+
+def _passage(passage: content.Passage, completed: set[str]) -> schemas.Passage:
+    return schemas.Passage(**asdict(passage), unlocked=passage.lesson in completed)
+
+
+@router.get("/passages")
+def list_passages(db: Db) -> list[schemas.Passage]:
+    completed = _completed_lessons(db)
+    return [_passage(passage, completed) for passage in PASSAGES]
+
+
+@router.get("/passages/{id}")
+def get_passage(id: str, db: Db) -> schemas.Passage:
+    if passage := next((p for p in PASSAGES if p.id == id), None):
+        return _passage(passage, _completed_lessons(db))
+    raise HTTPException(404, "unknown passage")
+
+
 @router.get("/home", response_model=schemas.Home)
 def home(db: Db, now: Now) -> schemas.Home:
     profile = _profile(db)
@@ -88,13 +137,13 @@ def home(db: Db, now: Now) -> schemas.Home:
     )
     days = streak.practice_days((streak.Session(*s) for s in sessions), tz)
     items = [scheduler.Item(i.id, i.due_at) for i in db.scalars(select(Item))]
-    shapes = Counter(scheduler.quality(i) for i in items)
+    completed = _completed_lessons(db)
     return schemas.Home(
         streak=streak.streak(days, today),
         week_days=streak.week_progress(days, today),
         weekly_goal_days=profile.weekly_goal_days,
         due_count=len(scheduler.due(items, now, limit=len(items))),
-        next_lesson=next((q for q in LESSON_ORDER if shapes[q] < 3), None),
+        next_lesson=next((q for q in LESSON_ORDER if q not in completed), None),
         cue=profile.cue,
     )
 
