@@ -119,6 +119,20 @@ def test_pick_a_song_plays_the_passage_with_a_challenge_card(client, db, onboard
     assert session["steps"][1]["card"] in CHALLENGE_CARDS
 
 
+def test_shape_reviews_name_a_root_that_advances_per_review(client, db, onboarded):
+    rate(client, start(client)["id"], "shape:major:0", "challenging")
+    roots = {s["id"]: s["root"] for s in start(client, "test_me")["steps"]}
+    # Roots follow the cycle of fourths from C; passages are played as written.
+    assert (roots["shape:major:0"], roots["shape:major:1"]) == ("F", "C")
+    assert roots["passage:la-bamba"] is None
+
+
+def test_only_review_steps_have_a_root(client, db, onboarded):
+    session = start(client, "pick_a_song", passage="la-bamba")
+    assert [s["root"] for s in session["steps"]] == [None, None]
+    assert start(client, "continue")["steps"][0]["root"] is None
+
+
 @pytest.mark.parametrize(
     "body",
     [
