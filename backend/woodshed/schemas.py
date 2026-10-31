@@ -5,6 +5,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from woodshed.domain.placement import Check
+from woodshed.domain.planner import Action
+from woodshed.domain.scheduler import Rating
 
 
 def _known_timezone(name: str) -> str:
@@ -20,6 +22,7 @@ StuckOn = Literal["same_material", "what_to_practice", "technique", "theory"]
 WeeklyGoal = Annotated[int, Field(ge=1, le=7)]
 Timezone = Annotated[str, AfterValidator(_known_timezone)]
 Cue = Annotated[str, Field(min_length=1)]
+Length = Literal["25", "open"]
 
 
 class Profile(BaseModel):
@@ -74,3 +77,42 @@ class ProgressItem(BaseModel):
     id: str
     box: int
     due_at: datetime
+
+
+class NewSession(BaseModel):
+    action: Action
+    length: Length
+    passage: str | None = None
+
+
+class Step(BaseModel):
+    kind: Literal["review", "lesson", "passage", "challenge", "theory"]
+    id: str
+    card: str | None = None
+    root: str | None = None
+
+
+class Plan(BaseModel):
+    id: int
+    steps: list[Step]
+
+
+class NewRating(BaseModel):
+    item_id: str
+    rating: Rating
+
+
+class Summary(BaseModel):
+    duration_seconds: int
+    items_rated: int
+    next_due: list[ProgressItem]
+    streak: int
+
+
+class PastSession(BaseModel):
+    id: int
+    action: Action
+    length: Length
+    started_at: datetime
+    items_rated: int
+    duration_seconds: int | None
