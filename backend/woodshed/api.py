@@ -110,14 +110,18 @@ def get_lesson(quality: str) -> schemas.Lesson:
     raise HTTPException(404, "unknown lesson")
 
 
+SHAPE_LESSONS = {
+    shape_item_id(lesson.quality, i): lesson.quality
+    for lesson in LESSONS
+    for i in range(3)
+}
+
+
 def _completed_lessons(db: Session) -> set[str]:
     # A lesson is completed when its 3 shape items exist (§8).
     shapes = set(db.scalars(select(Item.id).where(Item.kind == "shape")))
-    return {
-        lesson.quality
-        for lesson in LESSONS
-        if all(shape_item_id(lesson.quality, i) in shapes for i in range(3))
-    }
+    missing = {lesson for id, lesson in SHAPE_LESSONS.items() if id not in shapes}
+    return set(SHAPE_LESSONS.values()) - missing
 
 
 def _passage(passage: content.Passage, completed: set[str]) -> schemas.Passage:
@@ -167,13 +171,6 @@ def home(db: Db, now: Now) -> schemas.Home:
 @router.get("/progress", response_model=list[schemas.ProgressItem])
 def progress(db: Db) -> list[Item]:
     return list(db.scalars(select(Item).order_by(Item.id)))
-
-
-SHAPE_LESSONS = {
-    shape_item_id(lesson.quality, i): lesson.quality
-    for lesson in LESSONS
-    for i in range(3)
-}
 
 
 def _step(step: planner.Step, reviews: dict[str, int]) -> schemas.Step:
