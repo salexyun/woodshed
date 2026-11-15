@@ -121,6 +121,14 @@ def test_pick_a_song_plays_the_passage_with_a_challenge_card(client, db, onboard
     assert session["steps"][1]["card"] in CHALLENGE_CARDS
 
 
+def test_test_me_draws_from_the_last_session_with_ratings(client, db, onboarded):
+    rate(client, start(client)["id"], "shape:major:2")
+    start(client, "continue")  # abandoned without ratings
+    reviews = [id for kind, id in steps(start(client, "test_me")) if kind == "review"]
+    # Due passages first, then the rated shape ahead of its lower-box siblings.
+    assert reviews[: len(MAJOR_PASSAGES) + 1] == [*MAJOR_PASSAGES, "shape:major:2"]
+
+
 def test_shape_reviews_name_a_root_that_advances_per_review(client, db, onboarded):
     rate(client, start(client)["id"], "shape:major:0", "challenging")
     roots = {s["id"]: s["root"] for s in start(client, "test_me")["steps"]}

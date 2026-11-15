@@ -188,7 +188,8 @@ def _step(step: planner.Step, reviews: dict[str, int]) -> schemas.Step:
 def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
     _profile(db)
     rows = list(db.scalars(select(Item)))
-    last = select(func.max(PracticeSession.id)).scalar_subquery()
+    # An abandoned session has no ratings, so it can't be the last one (§5.4).
+    last = select(func.max(Rating.session_id)).scalar_subquery()
     last_session = db.scalars(
         select(Rating.item_id).where(Rating.session_id == last).order_by(Rating.id)
     )
