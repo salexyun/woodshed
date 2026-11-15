@@ -1,4 +1,5 @@
 import random
+from collections.abc import Collection
 from dataclasses import asdict
 from datetime import UTC, date, datetime, timedelta
 from typing import Annotated
@@ -45,6 +46,14 @@ def _new_item(id: str, box: int, due_at: datetime, now: datetime) -> Item:
     return Item(id=id, kind=kind, box=box, due_at=due_at, reviews=0, created_at=now)
 
 
+def _unlock_passages(lessons: Collection[str], now: datetime) -> list[Item]:
+    return [
+        _new_item(passage_item_id(p.id), 1, now, now)
+        for p in PASSAGES
+        if p.lesson in lessons
+    ]
+
+
 @router.get("/profile", response_model=schemas.Profile)
 def get_profile(db: Db) -> Profile:
     return _profile(db)
@@ -65,12 +74,8 @@ def onboard(answers: schemas.Onboarding, db: Db, now: Now) -> Profile:
         _new_item(id, box, now + timedelta(days=INTERVAL_DAYS[box - 1]), now)
         for id, box in placement.items.items()
     )
-    # Placing a quality counts as completing its lesson, which unlocks its passages.
-    db.add_all(
-        _new_item(passage_item_id(p.id), 1, now, now)
-        for p in PASSAGES
-        if p.lesson in placement.known
-    )
+    # Placing a quality counts as completing its lesson.
+    db.add_all(_unlock_passages(placement.known, now))
     db.commit()
     return profile
 
@@ -231,11 +236,7 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
         item = _new_item(body.item_id, 1, now, now)
         db.add(item)
         if lesson in _completed_lessons(db):
-            db.add_all(
-                _new_item(passage_item_id(p.id), 1, now, now)
-                for p in PASSAGES
-                if p.lesson == lesson
-            )
+            db.add_all(_unlock_passages({lesson}, now))
     box_before = item.box
     item.box, item.due_at = scheduler.rate(item.box, body.rating, now)
     item.reviews += 1
