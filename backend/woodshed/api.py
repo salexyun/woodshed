@@ -272,7 +272,7 @@ def finish_session(id: int, db: Db, now: Now) -> schemas.Summary:
     )
     tz = ZoneInfo(profile.timezone)
     summary = schemas.Summary(
-        duration_seconds=_duration(session),
+        duration_seconds=int((now - session.started_at).total_seconds()),
         items_rated=len(rated),
         next_due=rated,
         streak=streak.streak(_practice_days(db, tz), now.astimezone(tz).date()),
