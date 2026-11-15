@@ -6,13 +6,14 @@ from woodshed.domain.placement import LESSON_ORDER
 from woodshed.domain.scheduler import Item, due, quality
 
 Action = Literal["today", "continue", "test_me", "pick_a_song"]
+StepKind = Literal["review", "lesson", "passage", "challenge", "theory"]
 TODAY_REVIEWS = 3
 TEST_ME_ITEMS = 10
 
 
 @dataclass(frozen=True)
 class Step:
-    kind: Literal["review", "lesson", "passage", "challenge", "theory"]
+    kind: StepKind
     id: str
 
 

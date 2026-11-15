@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from woodshed.domain.placement import Check
-from woodshed.domain.planner import Action
+from woodshed.domain.planner import Action, StepKind
 from woodshed.domain.scheduler import Rating
 
 
@@ -86,7 +86,7 @@ class NewSession(BaseModel):
 
 
 class Step(BaseModel):
-    kind: Literal["review", "lesson", "passage", "challenge", "theory"]
+    kind: StepKind
     id: str
     card: str | None = None
     root: str | None = None
