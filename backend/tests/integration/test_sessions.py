@@ -107,7 +107,9 @@ def test_todays_plan_is_due_reviews_then_the_next_lesson(client, db, onboarded):
 
 
 def test_continue_is_the_next_lesson_only(client, db, onboarded):
-    assert steps(start(client, "continue")) == [("lesson", "minor")]
+    session = start(client, "continue")
+    assert steps(session) == [("lesson", "minor")]
+    assert session["steps"][0]["card"] in CHALLENGE_CARDS
 
 
 def test_pick_a_song_plays_the_passage_with_a_challenge_card(client, db, onboarded):

@@ -174,10 +174,12 @@ SHAPE_LESSONS = {
 def _step(step: planner.Step, reviews: dict[str, int]) -> schemas.Step:
     # Only shape reviews name a root (§5.1); a passage is played as written.
     names_root = step.kind == "review" and step.id in SHAPE_LESSONS
+    # Each lesson and each passage (via its challenge step) gets a card (§4).
+    has_card = step.kind in ("lesson", "challenge")
     return schemas.Step(
         kind=step.kind,
         id=step.id,
-        card=random.choice(CHALLENGE_CARDS) if step.kind == "challenge" else None,
+        card=random.choice(CHALLENGE_CARDS) if has_card else None,
         root=scheduler.review_root(reviews[step.id]) if names_root else None,
     )
 
