@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import distinct, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from woodshed import content, schemas
@@ -257,10 +258,23 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
         # Lesson shapes are created by their first rating (§5.5).
         if (lesson := SHAPE_LESSONS.get(body.item_id)) is None:
             raise HTTPException(404, "unknown item")
-        item = _new_item(body.item_id, 1, now, now)
-        db.add(item)
-        if lesson in _completed_lessons(db):
+        # A concurrent first rating may create it too, so only one insert wins.
+        created = db.scalar(
+            insert(Item)
+            .values(
+                id=body.item_id,
+                kind="shape",
+                box=1,
+                due_at=now,
+                reviews=0,
+                created_at=now,
+            )
+            .on_conflict_do_nothing()
+            .returning(Item.id)
+        )
+        if created and lesson in _completed_lessons(db):
             db.add_all(_unlock_passages({lesson}, now))
+        item = db.get_one(Item, body.item_id)
     box_before = item.box
     item.box, item.due_at = scheduler.rate(item.box, body.rating, now)
     item.reviews += 1

@@ -1,10 +1,14 @@
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 
 from woodshed.api import get_now
 from woodshed.content import CHALLENGE_CARDS, PASSAGES
+from woodshed.db import get_session
 from woodshed.main import app
 from woodshed.models import Item, PracticeSession, Rating
 
@@ -199,6 +203,50 @@ def test_rating_a_lesson_shape_creates_it_from_box_1(client, db, onboarded):
         NOW + timedelta(days=3),
     )
     assert (ratings(db)[0].box_before, ratings(db)[0].box_after) == (1, 2)
+
+
+# The second case completes the lesson, so both requests also try to unlock passages.
+@pytest.mark.parametrize("rated_before", [0, 2])
+def test_concurrent_first_ratings_of_a_shape_both_succeed(
+    client, db, onboarded, database_url, rated_before
+):
+    session_id = start(client, "continue")["id"]
+    for id in MINOR_SHAPES[:rated_before]:
+        assert rate(client, session_id, id).status_code == 200
+    shape_id = MINOR_SHAPES[rated_before]
+    engine = create_engine(database_url)
+    # Holds each request after it finds the item missing, so both race to create it.
+    barrier = threading.Barrier(2, timeout=5)
+
+    class RacingSession(Session):
+        def get(self, entity, ident, **kw):
+            found = super().get(entity, ident, **kw)
+            if entity is Item and found is None:
+                barrier.wait()
+            return found
+
+    def session():
+        with RacingSession(engine) as s:
+            yield s
+
+    app.dependency_overrides[get_session] = session
+    try:
+        with ThreadPoolExecutor(2) as pool:
+            responses = list(
+                pool.map(lambda _: rate(client, session_id, shape_id), range(2))
+            )
+    finally:
+        engine.dispose()
+
+    assert [r.status_code for r in responses] == [200, 200]
+    stored = item(db, shape_id)
+    assert (stored.box, stored.reviews) == (3, 2)
+    assert [
+        (r.box_before, r.box_after) for r in ratings(db) if r.item_id == shape_id
+    ] == [(1, 2), (2, 3)]
+    unlocked = db.scalars(select(Item.id).where(Item.id.in_(MINOR_PASSAGES)))
+    completes_lesson = rated_before == 2
+    assert sorted(unlocked) == (sorted(MINOR_PASSAGES) if completes_lesson else [])
 
 
 def test_two_of_3_shapes_leave_the_lesson_incomplete(client, db, onboarded):
