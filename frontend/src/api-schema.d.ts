@@ -159,6 +159,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session Detail */
+        get: operations["get_session_detail_api_sessions__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions/{id}/ratings": {
         parameters: {
             query?: never;
@@ -406,6 +423,32 @@ export interface components {
          * @enum {string}
          */
         Rating: "easy" | "challenging" | "unfamiliar";
+        /** SessionDetail */
+        SessionDetail: {
+            /** Id */
+            id: number;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "today" | "continue" | "test_me" | "pick_a_song";
+            /**
+             * Length
+             * @enum {string}
+             */
+            length: "25" | "open";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Steps */
+            steps: components["schemas"]["Step"][];
+            /** Rated */
+            rated: string[];
+        };
         /** Step */
         Step: {
             /**
@@ -721,6 +764,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Plan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_detail_api_sessions__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetail"];
                 };
             };
             /** @description Validation Error */
