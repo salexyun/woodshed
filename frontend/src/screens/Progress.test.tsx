@@ -20,6 +20,22 @@ const PROGRESS: Schemas["ProgressItem"][] = [
 // Newest first, as the API returns them. 18:30 UTC is the next day in Seoul.
 const SESSIONS: Schemas["PastSession"][] = [
   {
+    id: 4,
+    action: "continue",
+    length: "25",
+    started_at: "2026-11-15T09:00:00Z",
+    items_rated: 0,
+    duration_seconds: null,
+  },
+  {
+    id: 3,
+    action: "test_me",
+    length: "25",
+    started_at: "2026-11-15T08:00:00Z",
+    items_rated: 1,
+    duration_seconds: 20,
+  },
+  {
     id: 2,
     action: "pick_a_song",
     length: "25",
@@ -93,12 +109,14 @@ describe("history", () => {
     renderScreen();
 
     const table = await screen.findByRole("table", { name: /history/i });
-    await within(table).findByText("2026-11-15");
+    await within(table).findAllByText("2026-11-15");
     const rows = within(table)
       .getAllByRole("row")
       .filter((row) => within(row).queryAllByRole("cell").length)
       .map((row) => within(row).getAllByRole("cell").map((cell) => cell.textContent));
     expect(rows).toEqual([
+      ["2026-11-15", "—", "Continue", "0 items"],
+      ["2026-11-15", "<1 min", "Test me", "1 item"],
       ["2026-11-15", "25 min", "Pick a song", "3 items"],
       ["2026-11-13", "40 min", "Today's plan", "5 items"],
     ]);
@@ -132,7 +150,17 @@ describe("settings", () => {
     );
   });
 
-  it("shows an error when the save is rejected", async () => {
+  it("shows the form only once the profile has loaded", async () => {
+    vi.mocked(api.get).mockImplementation(async (path: string) =>
+      path === "/api/profile" ? new Promise(() => {}) : { ok: true, data: DATA[path] as never },
+    );
+    render(<Progress />);
+
+    await shapeCell("major, root position");
+    expect(screen.queryByRole("button", { name: /save/i })).toBeNull();
+  });
+
+  it("shows a validation error when the save is rejected", async () => {
     renderScreen();
     vi.mocked(api.patch).mockResolvedValue({
       ok: false,
@@ -145,6 +173,18 @@ describe("settings", () => {
     fireEvent.change(screen.getByLabelText(/cue/i), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
-    await screen.findByRole("alert");
+    expect((await screen.findByRole("alert")).textContent).toMatch(/goal is 1 to 7 days/);
+  });
+
+  it("shows a server error when the save fails otherwise", async () => {
+    renderScreen();
+    vi.mocked(api.patch).mockResolvedValue({ ok: false, error: { kind: "network" } });
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/cue/i).value).toBe("after coffee"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't reach the server/i);
   });
 });

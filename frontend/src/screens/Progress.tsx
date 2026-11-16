@@ -17,6 +17,9 @@ const ACTIONS: Record<Schemas["PastSession"]["action"], string> = {
 // Box 1 (just learned) to box 5 (well known), light to dark green.
 const BOX_COLORS = ["#d9f0d3", "#a6dba0", "#5aae61", "#1b7837", "#00441b"];
 
+const minutes = (seconds: number | null) =>
+  seconds === null ? "—" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
+
 export default function Progress() {
   const [boxes, setBoxes] = useState<Map<string, number>>();
   const [sessions, setSessions] = useState<Schemas["PastSession"][]>();
@@ -90,7 +93,7 @@ export default function Progress() {
             {sessions.map((s) => (
               <tr key={s.id}>
                 <td>{date.format(new Date(s.started_at))}</td>
-                <td>{s.duration_seconds === null ? "—" : `${Math.round(s.duration_seconds / 60)} min`}</td>
+                <td>{minutes(s.duration_seconds)}</td>
                 <td>{ACTIONS[s.action]}</td>
                 <td>
                   {s.items_rated} {s.items_rated === 1 ? "item" : "items"}
