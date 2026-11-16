@@ -69,12 +69,17 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      # The on-call responder (#27) runs on the host, next to the repo it fixes.
+      RESPONDER_URL: ${RESPONDER_URL:-http://host.docker.internal:8090/alerts}
+    extra_hosts:
+      - host.docker.internal:host-gateway
     ports:
       - "3000:3000"
     volumes:
       - ./observability/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/woodshed.yaml:ro
       - ./observability/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/woodshed.yaml:ro
       - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
+      - ./observability/grafana/alerting.yaml:/etc/grafana/provisioning/alerting/woodshed.yaml:ro
 
 configs:
   create-test-db:
