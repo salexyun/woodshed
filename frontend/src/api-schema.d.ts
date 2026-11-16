@@ -336,6 +336,12 @@ export interface components {
             kind: "song" | "exercise";
             /** Chords */
             chords: string[];
+            /** Shapes */
+            shapes: [
+                number,
+                number,
+                number
+            ][];
             /**
              * Lesson
              * @enum {string}

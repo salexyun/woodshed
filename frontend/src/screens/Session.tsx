@@ -34,13 +34,11 @@ function useLoad<T>(load: () => Promise<ApiResult<T>>): ApiResult<T> | undefined
   return result;
 }
 
-// Retrying can't fix a 409: the session was finished, e.g. by Wrap up while a rating was in flight.
+// Retrying can't fix these. A 409 means the session was finished, e.g. by Wrap up while a rating was in flight.
+const FINAL: Record<number, string> = { 404: "Session not found.", 409: "This session is finished." };
+
 const Alert = ({ error }: { error: ApiError }) => (
-  <p role="alert">
-    {error.kind === "http" && error.status === 409
-      ? "This session is finished."
-      : "Couldn't reach the server. Try again."}
-  </p>
+  <p role="alert">{(error.kind === "http" && FINAL[error.status]) || "Couldn't reach the server. Try again."}</p>
 );
 
 const Pending = ({ result }: { result?: Failed }) => (result ? <Alert error={result.error} /> : <p>Loading…</p>);
@@ -189,14 +187,25 @@ function Summary({ summary }: { summary: Schemas["Summary"] }) {
   );
 }
 
-const LESSON_ITEMS = 4; // 3 shapes and a passage
+// A lesson's passage isn't in the plan, so its rating is matched by prefix.
+const itemsOf = (step: Schemas["Step"]) =>
+  step.kind === "lesson"
+    ? [0, 1, 2].map((i) => `shape:${step.id}:${i}`).concat("passage:")
+    : step.kind === "challenge"
+      ? []
+      : [step.id];
 
-// Ratings arrive in plan order, so count them off step by step rather than matching ids:
-// the same item can come due as a review before the lesson that rates it again.
-function resumeAt(steps: Schemas["Step"][], rated: number) {
+// Ratings arrive in plan order, so match them against the plan's items in turn rather than by id alone:
+// the same item can come due as a review before the lesson that rates it again. An entry that doesn't
+// match the next item is a duplicate, e.g. a retried rating whose first response was lost.
+function resumeAt(steps: Schemas["Step"][], rated: string[]) {
+  const expected = steps.flatMap(itemsOf);
+  let count = 0;
+  for (const id of rated) if (count < expected.length && id.startsWith(expected[count])) count++;
   for (const [index, step] of steps.entries()) {
-    if (step.kind === "lesson" ? rated <= LESSON_ITEMS : rated === 0) return { index, done: rated };
-    rated -= step.kind === "lesson" ? LESSON_ITEMS : step.kind === "challenge" ? 0 : 1;
+    const items = itemsOf(step).length;
+    if (step.kind === "lesson" ? count <= items : count === 0) return { index, done: count };
+    count -= items;
   }
   return { index: steps.length, done: 0 };
 }
@@ -204,7 +213,7 @@ function resumeAt(steps: Schemas["Step"][], rated: number) {
 function Run({ session }: { session: Schemas["SessionDetail"] }) {
   // Theory questions have no screen yet, so they're skipped rather than stalling the session.
   const steps = session.steps.filter((step) => step.kind !== "theory");
-  const [resume] = useState(() => resumeAt(steps, session.rated.length));
+  const [resume] = useState(() => resumeAt(steps, session.rated));
   const [index, setIndex] = useState(resume.index);
   const [summary, setSummary] = useState<Schemas["Summary"]>();
   const [error, setError] = useState<ApiError>();
@@ -254,8 +263,8 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
 }
 
 export default function Session() {
-  const id = Number(useParams().id);
-  return Number.isInteger(id) ? <Load id={id} /> : <p role="alert">Session not found.</p>;
+  const { id = "" } = useParams();
+  return /^\d+$/.test(id) ? <Load id={Number(id)} /> : <p role="alert">Session not found.</p>;
 }
 
 function Load({ id }: { id: number }) {
