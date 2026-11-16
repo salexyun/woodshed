@@ -60,9 +60,9 @@ def setup(app: FastAPI) -> None:
     root.addHandler(handler)
     root.setLevel(logging.INFO)
     # Uvicorn prints plain text through its own handlers; route its logs through ours.
-    for name in ("uvicorn", "uvicorn.access"):
-        logging.getLogger(name).handlers.clear()
-        logging.getLogger(name).propagate = True
+    for logger in map(logging.getLogger, ("uvicorn", "uvicorn.access")):
+        logger.handlers.clear()
+        logger.propagate = True
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
         _export_otlp()
     # Only the stable HTTP conventions label request metrics with http.route.
