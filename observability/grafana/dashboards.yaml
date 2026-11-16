@@ -1,0 +1,6 @@
+apiVersion: 1
+
+providers:
+  - name: woodshed
+    options:
+      path: /etc/grafana/dashboards
