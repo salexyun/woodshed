@@ -23,7 +23,7 @@ export default function App() {
       <Route element={<RequireProfile />}>
         <Route path="/" element={<h1>Woodshed</h1>} />
         {/* Paths without a screen yet still go through the gate. */}
-        <Route path="*" />
+        <Route path="*" element={null} />
       </Route>
     </Routes>
   );
