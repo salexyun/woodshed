@@ -30,3 +30,15 @@ python3 incident-response/responder.py
 ```
 
 It listens on port 8090 at `/alerts`, bound to `127.0.0.1` (that works with Docker Desktop's `host.docker.internal`). On Linux, set `RESPONDER_HOST` to the Docker bridge address, e.g. `172.17.0.1`; the endpoint has no auth, so never bind it to all interfaces. It reads Loki from `LOKI_URL` (default `http://localhost:3100`) and Tempo from `TEMPO_URL` (default `http://localhost:3200`). The agent runs `make test`, so it also needs `TEST_DATABASE_URL` if Postgres isn't on 5432.
+
+## Deploy
+
+Every merge to `main` builds an image tagged with the commit SHA, pushes it to GHCR and deploys it to dev. Production is manual:
+
+1. Pick the SHA to ship: usually dev's, the `version` at dev's `/healthz`.
+2. Actions → **Deploy prod** → **Run workflow**, paste the full SHA and run.
+3. Approve the `prod` deployment when the run asks for review.
+
+The run deploys that SHA's existing image (it never rebuilds) and waits until prod's `/healthz` reports it.
+
+**Rollback:** run **Deploy prod** again with the previous SHA, the one from the last good run in the **Deploy prod** runs list. This works only if no migration landed in between: the image runs `alembic upgrade head` on start, and an older image doesn't know a newer database revision, so it never comes up.

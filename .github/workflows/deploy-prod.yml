@@ -1,0 +1,45 @@
+name: Deploy prod
+# The runs list then doubles as the release history a rollback picks from.
+run-name: Deploy ${{ inputs.sha }} to prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        # Required rather than defaulting to dev's SHA, so the approver sees exactly what ships.
+        description: Full commit SHA to deploy (dev's is the `version` at its /healthz)
+        required: true
+
+permissions:
+  packages: read
+
+concurrency: prod
+
+jobs:
+  prod:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      SHA: ${{ inputs.sha }}
+      IMAGE: ghcr.io/${{ github.repository }}:${{ inputs.sha }}
+    steps:
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Prod never rebuilds: it ships the image dev already built and ran.
+      - name: Check image
+        run: docker manifest inspect "$IMAGE" > /dev/null || { echo "::error::No image $IMAGE (merge it to main first)"; exit 1; }
+      - name: Deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -o /dev/null -X POST "$HOOK&imgURL=$(jq -rn --arg u "$IMAGE" '$u|@uri')"
+      - name: Smoke test
+        timeout-minutes: 10
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          until [ "$(curl -fsS --max-time 30 "$APP_URL/healthz" | jq -r .version)" = "$SHA" ]; do
+            sleep 15
+          done

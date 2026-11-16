@@ -338,7 +338,7 @@ Each task's acceptance criteria define the cases its tests must cover.
 | --- | --- |
 | Pull request | `ruff`, OpenAPI types check, `make test` |
 | Merge to `main` | Tests → build the image tagged with the git SHA → push to GHCR → deploy to dev → smoke-test `/healthz` |
-| Manual (`workflow_dispatch`, with environment approval) | Deploy a chosen SHA (default: the current dev SHA) to prod → smoke test |
+| Manual (`workflow_dispatch`, with environment approval) | Deploy a chosen, required SHA (dev's is the `version` at its `/healthz`) to prod → smoke test |
 
 **Rollback:** run the prod workflow again with the previous SHA. Migrations must be backward-compatible with the previous release (expand, then contract).
 
