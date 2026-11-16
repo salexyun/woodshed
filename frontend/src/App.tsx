@@ -7,6 +7,7 @@ import Home from "./screens/Home";
 import Onboarding from "./screens/Onboarding";
 import PickASong from "./screens/PickASong";
 import Progress from "./screens/Progress";
+import Session from "./screens/Session";
 
 // A layout route, so it mounts again (and re-checks) when onboarding navigates into the app.
 function RequireProfile() {
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/pick-a-song" element={<PickASong />} />
         <Route path="/progress" element={<Progress />} />
+        <Route path="/sessions/:id" element={<Session />} />
         {/* Paths without a screen yet still go through the gate. */}
         <Route path="*" element={null} />
       </Route>
