@@ -219,6 +219,8 @@ def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
             )
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
+    if body.action == "continue" and not steps:
+        raise HTTPException(409, "no next lesson")
     reviews = {i.id: i.reviews for i in rows}
     plan = [_step(s, reviews) for s in steps]
     session = PracticeSession(
