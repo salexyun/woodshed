@@ -20,7 +20,7 @@ const BOX_COLORS = ["#d9f0d3", "#a6dba0", "#5aae61", "#1b7837", "#00441b"];
 export default function Progress() {
   const [boxes, setBoxes] = useState<Map<string, number>>();
   const [sessions, setSessions] = useState<Schemas["PastSession"][]>();
-  const [profile, setProfile] = useState<Schemas["Profile"]>();
+  const [date, setDate] = useState<Intl.DateTimeFormat>();
   const [cue, setCue] = useState("");
   const [goal, setGoal] = useState("");
   const [failed, setFailed] = useState(false);
@@ -31,7 +31,8 @@ export default function Progress() {
     api.get("/api/sessions").then((r) => (r.ok ? setSessions(r.data) : setFailed(true)));
     api.get("/api/profile").then((r) => {
       if (!r.ok) return setFailed(true);
-      setProfile(r.data);
+      // en-CA formats dates as YYYY-MM-DD; practice days are local to the profile's timezone.
+      setDate(new Intl.DateTimeFormat("en-CA", { timeZone: r.data.timezone }));
       setCue(r.data.cue);
       setGoal(String(r.data.weekly_goal_days));
     });
@@ -42,9 +43,6 @@ export default function Progress() {
     const result = await api.patch("/api/profile", { body: { cue, weekly_goal_days: Number(goal) } });
     setRejected(!result.ok);
   }
-
-  // en-CA formats dates as YYYY-MM-DD; practice days are local to the profile's timezone.
-  const date = profile && new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone });
 
   return (
     <main>
