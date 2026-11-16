@@ -27,11 +27,16 @@ const PASSAGES = [
 ];
 
 function CurrentPath() {
-  return <p>at {useLocation().pathname}</p>;
+  const { pathname, state } = useLocation();
+  return (
+    <p>
+      at {pathname} with {JSON.stringify(state)}
+    </p>
+  );
 }
 
-function renderScreen(length = "25") {
-  vi.mocked(api.get).mockResolvedValue({ ok: true, data: PASSAGES });
+function renderScreen(length = "25", passages = PASSAGES) {
+  vi.mocked(api.get).mockResolvedValue({ ok: true, data: passages });
   vi.mocked(api.post).mockResolvedValue({ ok: true, data: { id: 7, steps: [] } });
   render(
     <MemoryRouter initialEntries={[`/pick-a-song?length=${length}`]}>
@@ -75,6 +80,27 @@ describe("PickASong", () => {
 
     await start(/la bamba/i);
 
-    await screen.findByText("at /sessions/7");
+    const state = { plan: { id: 7, steps: [] }, length: "25" };
+    await screen.findByText(`at /sessions/7 with ${JSON.stringify(state)}`);
+  });
+
+  it("tells a new player to finish a lesson first", async () => {
+    renderScreen("25", [passage("let-it-be", "Let It Be", false)]);
+
+    await screen.findByText("Finish a lesson to unlock songs.");
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("disables the passages while a session is starting", async () => {
+    renderScreen();
+    vi.mocked(api.post).mockReturnValue(new Promise(() => {}));
+
+    await start(/la bamba/i);
+
+    for (const button of screen.getAllByRole("button")) {
+      expect(button).toHaveProperty("disabled", true);
+    }
+    fireEvent.click(screen.getByRole("button", { name: /twist and shout/i }));
+    expect(api.post).toHaveBeenCalledTimes(1);
   });
 });
