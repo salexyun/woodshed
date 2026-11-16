@@ -40,9 +40,12 @@ export default function Home() {
     // The session screen reads the plan from router state, so it needn't fetch it again.
     if (result.ok) navigate(`/sessions/${result.data.id}`, { state: { plan: result.data, length } });
     else {
-      // Continue is enabled until Home loads, so it can reach a finished course.
-      const done = result.error.kind === "http" && result.error.status === 409;
-      setError(done ? "All lessons are done, so there's nothing to continue." : UNREACHABLE);
+      // 409 means an empty plan (§7). Only Continue (a finished course; it's enabled
+      // until Home loads) and Test me (nothing placed or rated yet) can reach it.
+      const empty = result.error.kind === "http" && result.error.status === 409;
+      if (!empty) setError(UNREACHABLE);
+      else if (action === "test_me") setError("Nothing to test yet. Start a lesson first.");
+      else setError("All lessons are done, so there's nothing to continue.");
       setStarting(false);
     }
   }

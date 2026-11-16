@@ -262,6 +262,7 @@ backend/woodshed/
 - 422 for invalid input
 - 404 for unknown resources
 - 409 for rating an item in a finished session
+- 409 for starting a session with an empty plan: Continue with no next lesson, or Test me before any item exists. No session is stored.
 
 ## 8. Database
 
