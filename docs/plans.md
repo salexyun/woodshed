@@ -249,6 +249,7 @@ backend/woodshed/
 | GET | `/api/lessons` · `/api/lessons/{quality}` | Lesson content with computed shapes |
 | GET | `/api/passages` · `/api/passages/{id}` | Passage content (song or exercise) and unlock state |
 | POST | `/api/sessions` | Start a session `{action, length}`; returns the plan |
+| GET | `/api/sessions/{id}` | One session with its stored steps and the item ids rated in it, to resume it |
 | POST | `/api/sessions/{id}/ratings` | Rate one item `{item_id, rating}`; returns its new box and `due_at` |
 | POST | `/api/sessions/{id}/finish` | Finish a session; returns the summary |
 | GET | `/api/sessions` | Session history |
@@ -270,7 +271,7 @@ The database stores the player's state only. Content IDs reference `content.py`.
 | --- | --- |
 | `profile` | `id` (always 1), `years_playing`, `stuck_on`, `cue`, `weekly_goal_days`, `timezone`, `created_at` |
 | `item` | `id` (e.g. `shape:minor:1`, `passage:let-it-be`), `kind`, `box`, `due_at`, `reviews`, `last_rated_at`, `created_at` |
-| `session` | `id`, `action`, `length`, `started_at`, `finished_at` |
+| `session` | `id`, `action`, `length`, `started_at`, `finished_at`, `steps` (the plan, JSON; null for sessions from before it was stored) |
 | `rating` | `id`, `session_id` → session, `item_id` → item, `value`, `box_before`, `box_after`, `rated_at` |
 
 Notes:
