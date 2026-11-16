@@ -4,5 +4,5 @@
 **/dist
 .git
 .claude
-.env
-.env.*
+**/.env
+**/.env.*
