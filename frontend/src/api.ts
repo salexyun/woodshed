@@ -4,7 +4,6 @@ type Method = "get" | "post" | "patch";
 type PathsWith<M extends Method> = {
   [P in keyof paths]: paths[P] extends Record<M, object> ? P : never;
 }[keyof paths];
-type Operation<P extends keyof paths, M extends Method> = paths[P][M];
 
 type Json<R> = R extends { content: { "application/json": infer T } } ? T : never;
 type Data<O> = O extends { responses: infer R } ? Json<R[keyof R & (200 | 201)]> : never;
@@ -30,12 +29,8 @@ async function request<T>(
     body === undefined
       ? { method }
       : { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
-  let response: Response;
-  try {
-    response = await fetch(url, init);
-  } catch {
-    return { ok: false, error: { kind: "network" } };
-  }
+  const response = await fetch(url, init).catch(() => undefined);
+  if (!response) return { ok: false, error: { kind: "network" } };
   const json = await response.json().catch(() => undefined);
   return response.ok
     ? { ok: true, data: json }
@@ -44,7 +39,7 @@ async function request<T>(
 
 const method =
   <M extends Method>(name: M) =>
-  <P extends PathsWith<M>>(path: P, ...[options]: Args<Operation<P, M>>) =>
-    request<Data<Operation<P, M>>>(name.toUpperCase(), path, options as RequestOptions);
+  <P extends PathsWith<M>>(path: P, ...[options]: Args<paths[P][M]>) =>
+    request<Data<paths[P][M]>>(name.toUpperCase(), path, options as RequestOptions);
 
 export const api = { get: method("get"), post: method("post"), patch: method("patch") };
