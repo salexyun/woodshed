@@ -1,7 +1,10 @@
-.PHONY: test lint types
+.PHONY: up test lint types
 
 # Integration tests need Postgres: run `docker compose up -d --wait db` first.
 export TEST_DATABASE_URL ?= postgresql://woodshed:woodshed@localhost:5432/woodshed_test
+
+up:
+	docker compose up --build --wait
 
 frontend/node_modules: frontend/package-lock.json
 	cd frontend && npm ci

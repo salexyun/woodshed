@@ -14,7 +14,7 @@ COLUMNS = {
         "created_at",
     },
     "item": {"id", "kind", "box", "due_at", "reviews", "last_rated_at", "created_at"},
-    "session": {"id", "action", "length", "started_at", "finished_at"},
+    "session": {"id", "action", "length", "started_at", "finished_at", "steps"},
     "rating": {
         "id",
         "session_id",
