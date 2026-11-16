@@ -72,7 +72,7 @@ make lint                        # ruff check, ruff format --check, tsc --noEmit
 | --- | --- | --- |
 | Unit | [`backend/tests/unit/`](backend/tests/unit) | Triad positions, Leitner transitions, root rotation, streak and week rules, plan building, placement, the responder |
 | Integration | [`backend/tests/integration/`](backend/tests/integration) | The API end to end against Postgres: onboarding → home → session journey → progress, errors, migrations, telemetry |
-| Frontend | [`frontend/src/`](frontend/src) | Components (`Fretboard`, `RatingButtons`, `ReviewCard`, `Timer`) and every screen against a mocked API |
+| Frontend | [`frontend/src/`](frontend/src) | Components (`Fretboard`, `RatingButtons`, `ReviewCard`, `Timer`, `ChallengeCard`) and every screen against a mocked API |
 
 Integration tests use their own `woodshed_test` database. Set `TEST_DATABASE_URL` if Postgres isn't on port 5432.
 
@@ -100,7 +100,7 @@ The app is instrumented with OpenTelemetry and exports to a Collector, which fee
 
 - **Traces:** FastAPI and SQLAlchemy spans, plus spans for planning and scheduling.
 - **Metrics:** HTTP request count and duration by route and status, `woodshed_sessions_started_total{action}`, `woodshed_sessions_finished_total` and `woodshed_ratings_total{rating}`.
-- **Logs:** JSON lines that carry `trace_id` and `span_id`.
+- **Logs:** JSON lines that carry `trace_id` and `span_id` for logs inside a request (uvicorn's unhandled-exception line doesn't yet, [#105](https://github.com/salexyun/woodshed/issues/105)).
 - **Privacy:** no request bodies, no free text (the player's cue) and no database error details reach telemetry. Tests in [`test_telemetry.py`](backend/tests/integration/test_telemetry.py) check this.
 
 The **"Woodshed: practice journey"** dashboard ([JSON](observability/grafana/dashboards/practice-journey.json)) shows sessions started and finished, the rating mix, the error rate and p95 latency of the journey routes, and the app's logs. Open a log line to jump to its trace in Tempo.
@@ -183,6 +183,6 @@ How this repo meets the [AI Dev Tools Zoomcamp project criteria](https://github.
 | 7 | Containerization | [`Dockerfile`](Dockerfile) and [`compose.yaml`](compose.yaml): app, Postgres and the telemetry stack; one command, `make up` |
 | 8 | Deployment | <https://woodshed-dev.onrender.com> and <https://woodshed-prod.onrender.com> on Render ([#23](https://github.com/salexyun/woodshed/issues/23), [#24](https://github.com/salexyun/woodshed/issues/24)) |
 | 9 | CI/CD | [`ci.yml`](.github/workflows/ci.yml) on PRs; [`deploy.yml`](.github/workflows/deploy.yml) to dev on merge; [`deploy-prod.yml`](.github/workflows/deploy-prod.yml) manual with approval; [prod deploy](https://github.com/salexyun/woodshed/actions/runs/43898306118) and [rollback](https://github.com/salexyun/woodshed/actions/runs/43898903797) runs |
-| 10 | Observability | OTel traces, metrics and JSON logs sharing `trace_id`, no customer data, in Grafana: [Observability](#observability), [`observability/`](observability), [#25](https://github.com/salexyun/woodshed/issues/25) |
+| 10 | Observability | OTel traces, metrics and JSON logs; request logs share the trace's `trace_id` (error-line gap: [#105](https://github.com/salexyun/woodshed/issues/105)); no customer data; viewable in Grafana: [Observability](#observability), [`observability/`](observability), [#25](https://github.com/salexyun/woodshed/issues/25) |
 | 11 | Alerting on user impact | "Practice sessions failing" on the session journey's 5xx ratio: [Alerting](#alerting), [`alerting.yaml`](observability/grafana/alerting.yaml), [#26](https://github.com/salexyun/woodshed/issues/26) |
 | 12 | On-call agent | [`responder.py`](incident-response/responder.py), [`on-call.md`](.claude/agents/on-call.md); drill: [report](incident-response/incidents/20261116-133510/report.md) and fix PR [#100](https://github.com/salexyun/woodshed/pull/100) |
