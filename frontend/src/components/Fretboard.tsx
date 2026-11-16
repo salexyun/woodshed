@@ -12,7 +12,10 @@ const WIDTH = 2 * MARGIN + (STRINGS.length - 1) * STRING_GAP;
 const HEIGHT = 2 * MARGIN + FRETS * FRET_GAP;
 
 export default function Fretboard({ positions }: { positions: Position[] }) {
-  const lowest = Math.min(...positions.map((p) => p.fret));
+  // An empty board starts at the nut instead of Math.min()'s Infinity.
+  const lowest = positions.length
+    ? Math.min(...positions.map((p) => p.fret))
+    : 0;
   const first = Math.max(lowest, 1);
   const x = (string: GuitarString) =>
     MARGIN + STRINGS.indexOf(string) * STRING_GAP;
@@ -71,6 +74,22 @@ export default function Fretboard({ positions }: { positions: Position[] }) {
           y2={HEIGHT - MARGIN}
         />
       ))}
+      {STRINGS.filter((s) => !positions.some((p) => p.string === s)).map(
+        (string) => (
+          <text
+            key={string}
+            data-testid="muted"
+            data-string={string}
+            x={x(string)}
+            y={MARGIN - 12}
+            stroke="none"
+            textAnchor="middle"
+            fontSize={14}
+          >
+            x
+          </text>
+        ),
+      )}
       {positions.map(({ string, fret, root = false }) => (
         <g
           key={string}
