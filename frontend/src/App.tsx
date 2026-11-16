@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes } from "react-router";
 
 import { api, type ApiResult } from "./api";
 import type { components } from "./api-schema";
+import Home from "./screens/Home";
 import Onboarding from "./screens/Onboarding";
 
 // A layout route, so it mounts again (and re-checks) when onboarding navigates into the app.
@@ -26,7 +27,7 @@ export default function App() {
     <Routes>
       <Route path="/onboarding" element={<Onboarding />} />
       <Route element={<RequireProfile />}>
-        <Route path="/" element={<h1>Woodshed</h1>} />
+        <Route path="/" element={<Home />} />
         {/* Paths without a screen yet still go through the gate. */}
         <Route path="*" element={null} />
       </Route>
