@@ -14,14 +14,16 @@ Woodshed is a guitar practice planner. It decides what to practice (triads, sche
 backend/woodshed/       FastAPI app
   domain/               pure functions: theory, scheduler, streak, planner
   content.py            lessons, passages, challenge cards
+backend/migrations/     Alembic migrations (expand, then contract)
 backend/tests/          unit/ and integration/
 frontend/src/           React + TypeScript (Vite)
+frontend/tools/openapi/ locked openapi-typescript for `make types`
 incident-response/      on-call responder and incident records
 observability/          Collector, Prometheus, Loki, Tempo, Grafana config
+.github/workflows/      CI, deploy to dev, manual deploy to prod
+docs/                   spec, team, README screenshots
 .claude/agents/         the agent team
 ```
-
-Directories appear as the issues that create them land.
 
 ## Commands
 
