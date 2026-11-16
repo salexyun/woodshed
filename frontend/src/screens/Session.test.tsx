@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
@@ -72,6 +72,21 @@ const passages: Record<string, Schemas["Passage"]> = {
     ],
     lesson: "diminished",
     unlocked: false,
+  },
+  "stand-by-me": {
+    id: "stand-by-me",
+    title: "Stand By Me",
+    artist: "Ben E. King",
+    kind: "song",
+    chords: ["A", "F♯m", "D", "E"],
+    shapes: [
+      [2, 2, 0],
+      [11, 10, 9],
+      [7, 7, 5],
+      [9, 9, 7],
+    ],
+    lesson: "minor",
+    unlocked: true,
   },
   "let-it-be": {
     id: "let-it-be",
@@ -266,6 +281,45 @@ describe("Standalone passage", () => {
 
     await screen.findByText("Same chords, reggae offbeat strum.");
     expect(ratedItems()).toEqual(["passage:let-it-be"]);
+  });
+});
+
+describe("Passage diagrams", () => {
+  const standByMe = passages["stand-by-me"];
+  const planOf = (kind: "passage" | "review"): Schemas["Plan"] => ({
+    id: SESSION_ID,
+    steps: [{ kind, id: "passage:stand-by-me", card: null, root: null }],
+  });
+
+  // One figure per chord, captioned with its name and holding its diagram; the 2nd is F♯m.
+  async function expectDiagrams() {
+    const figures = await screen.findAllByRole("figure");
+    expect(figures.map((figure) => figure.textContent)).toEqual(standByMe.chords);
+    for (const figure of figures) expect(within(figure).getAllByRole("img", { name: "Fretboard" })).toHaveLength(1);
+    const dots = within(figures[1]).getAllByTestId("dot");
+    expect(dots.map((dot) => [dot.dataset.string, dot.dataset.fret])).toEqual([
+      ["3", "11"],
+      ["2", "10"],
+      ["1", "9"],
+    ]);
+  }
+
+  it("shows each chord's diagram in a passage step, in passage order", async () => {
+    mockApi(planOf("passage"));
+    start();
+
+    await screen.findByRole("heading", { name: "Stand By Me" });
+    await expectDiagrams();
+  });
+
+  it("reveals the passage's diagrams as a review card's answer", async () => {
+    mockApi(planOf("review"));
+    start();
+
+    await screen.findByText("Play Stand By Me");
+    expect(screen.queryAllByRole("figure")).toHaveLength(0);
+    await reveal();
+    await expectDiagrams();
   });
 });
 
