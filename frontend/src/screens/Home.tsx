@@ -23,6 +23,7 @@ export default function Home() {
   const [home, setHome] = useState<Summary>();
   const [length, setLength] = useState<Length>("25");
   const [failed, setFailed] = useState(false);
+  const [starting, setStarting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,10 +31,14 @@ export default function Home() {
   }, []);
 
   async function start(action: Action) {
+    setStarting(true);
     const result = await api.post("/api/sessions", { body: { action, length } });
     // The session screen reads the plan from router state, so it needn't fetch it again.
     if (result.ok) navigate(`/sessions/${result.data.id}`, { state: { plan: result.data, length } });
-    else setFailed(true);
+    else {
+      setFailed(true);
+      setStarting(false);
+    }
   }
 
   return (
@@ -65,7 +70,14 @@ export default function Home() {
       {/* One full-width column of large targets: the phone sits on a music stand. */}
       <div style={{ display: "grid", gap: "0.5rem" }}>
         {ACTIONS.map(([action, label]) => (
-          <button key={action} type="button" style={BUTTON} onClick={() => start(action)}>
+          <button
+            key={action}
+            type="button"
+            style={BUTTON}
+            // A finished course has no lesson to continue; Continue would post an empty session.
+            disabled={starting || (action === "continue" && home?.next_lesson === null)}
+            onClick={() => start(action)}
+          >
             {label}
           </button>
         ))}
