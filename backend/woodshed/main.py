@@ -11,10 +11,12 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response
 
+from woodshed import telemetry
 from woodshed.api import router
 from woodshed.db import get_session
 
 app = FastAPI(title="Woodshed")
+telemetry.setup(app)
 app.include_router(router)
 
 

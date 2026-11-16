@@ -6,6 +6,7 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
+from opentelemetry import metrics, trace
 from sqlalchemy import distinct, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -34,6 +35,12 @@ Db = Annotated[Session, Depends(get_session)]
 Now = Annotated[datetime, Depends(get_now)]
 
 router = APIRouter(prefix="/api")
+
+tracer = trace.get_tracer(__name__)
+meter = metrics.get_meter(__name__)
+sessions_started = meter.create_counter("woodshed.sessions.started")
+sessions_finished = meter.create_counter("woodshed.sessions.finished")
+ratings = meter.create_counter("woodshed.ratings")
 
 
 def _profile(db: Session) -> Profile:
@@ -201,14 +208,15 @@ def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
         select(Rating.item_id).where(Rating.session_id == last).order_by(Rating.id)
     )
     try:
-        steps = planner.plan(
-            body.action,
-            [scheduler.Item(i.id, i.due_at, i.box, i.last_rated_at) for i in rows],
-            _completed_lessons(db),
-            list(last_session),
-            now,
-            passage_item_id(body.passage) if body.passage else None,
-        )
+        with tracer.start_as_current_span("planner.plan"):
+            steps = planner.plan(
+                body.action,
+                [scheduler.Item(i.id, i.due_at, i.box, i.last_rated_at) for i in rows],
+                _completed_lessons(db),
+                list(last_session),
+                now,
+                passage_item_id(body.passage) if body.passage else None,
+            )
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
     reviews = {i.id: i.reviews for i in rows}
@@ -221,6 +229,7 @@ def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
     )
     db.add(session)
     db.commit()
+    sessions_started.add(1, {"action": body.action})
     return schemas.Plan(id=session.id, steps=plan)
 
 
@@ -280,7 +289,8 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
             db.add_all(_unlock_passages({lesson}, now))
         item = db.get_one(Item, body.item_id)
     box_before = item.box
-    item.box, item.due_at = scheduler.rate(item.box, body.rating, now)
+    with tracer.start_as_current_span("scheduler.rate"):
+        item.box, item.due_at = scheduler.rate(item.box, body.rating, now)
     item.reviews += 1
     item.last_rated_at = now
     db.add(
@@ -294,6 +304,7 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
         )
     )
     db.commit()
+    ratings.add(1, {"rating": body.rating})
     return item
 
 
@@ -323,6 +334,7 @@ def finish_session(id: int, db: Db, now: Now) -> schemas.Summary:
         streak=streak.streak(_practice_days(db, tz), now.astimezone(tz).date()),
     )
     db.commit()
+    sessions_finished.add(1)
     return summary
 
 
