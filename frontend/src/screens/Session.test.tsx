@@ -314,6 +314,29 @@ describe("Pending requests", () => {
   });
 });
 
+describe("Last step", () => {
+  beforeEach(() => {
+    plan = { id: SESSION_ID, steps: [reviewsThenLesson.steps[0]] };
+    mockApi(plan);
+  });
+
+  it("leaves only Finish when finishing fails after the last rating, and the retry finishes", async () => {
+    const respond = post.getMockImplementation()!;
+    post.mockImplementationOnce(respond).mockImplementationOnce(() => failure(500));
+    start();
+    await reveal();
+
+    fireEvent.click(await button(/^easy$/i));
+
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", { name: /^easy$/i })).toBeNull();
+    fireEvent.click(await button(/^finish$/i));
+    await screen.findByRole("heading", { name: /summary/i });
+    expect(ratedItems()).toEqual(["shape:minor:1"]);
+    expect(callsTo("/api/sessions/{id}/finish")).toHaveLength(2);
+  });
+});
+
 describe("Failed loads", () => {
   it("shows an alert when the session can't be loaded", async () => {
     get.mockImplementation(() => failure(500));

@@ -235,7 +235,8 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
           key={index}
           step={steps[index]}
           rate={rate}
-          onDone={last ? finish : () => setIndex(index + 1)}
+          // Move past the last step before finishing, so a failed finish leaves only Finish to retry.
+          onDone={() => (setIndex(index + 1), last && finish())}
           last={last}
           done={index === resume.index ? resume.done : 0}
         />
