@@ -35,6 +35,17 @@ const standalonePassage: Schemas["Plan"] = {
   ],
 };
 
+// A shape rated in an abandoned lesson comes due as a review before that lesson is complete.
+const reviewThenItsLesson: Schemas["Plan"] = {
+  id: SESSION_ID,
+  steps: [
+    { kind: "review", id: "shape:diminished:0", root: "A", card: null },
+    { kind: "review", id: "shape:major:0", root: "C", card: null },
+    { kind: "review", id: "shape:minor:1", root: "F♯", card: null },
+    { kind: "lesson", id: "diminished", card: CARD, root: null },
+  ],
+};
+
 const lesson: Schemas["Lesson"] = {
   quality: "diminished",
   explanation: "A diminished triad is a minor triad with the 5th lowered.",
@@ -346,6 +357,24 @@ describe("Resume", () => {
     await screen.findByText("Rate the 1st inversion");
     await rate();
     expect(ratedItems()).toEqual(["shape:diminished:1"]);
+  });
+
+  it("resumes at the next review when a later lesson has the rated item", async () => {
+    plan = reviewThenItsLesson;
+    mockApi(plan, { rated: ["shape:diminished:0"] });
+    start();
+
+    await screen.findByText("Play C major, root position, on G-B-E");
+  });
+
+  it("resumes a lesson at its root position when only an earlier review rated that shape", async () => {
+    plan = reviewThenItsLesson;
+    mockApi(plan, { rated: ["shape:diminished:0", "shape:major:0", "shape:minor:1"] });
+    start();
+
+    await screen.findByText("Rate the root position");
+    await rate();
+    expect(ratedItems()).toEqual(["shape:diminished:0"]);
   });
 
   it("resumes at the lesson's challenge once its passage is rated", async () => {

@@ -14,7 +14,8 @@ type Quality = Schemas["Lesson"]["quality"];
 type Failed = { ok: false; error: ApiError };
 // Builds the rating handler for one item; `then` runs once the rating is saved.
 type Rate = (itemId: string, then: () => void) => (rating: Rating) => void;
-type StepProps = { rate: Rate; onDone: () => void; last: boolean; rated: Set<string> };
+// `done` counts the items a resumed lesson already rated.
+type StepProps = { rate: Rate; onDone: () => void; last: boolean; done: number };
 
 const INVERSIONS = ["root position", "1st inversion", "2nd inversion"];
 // Shapes are given low to high on strings 3-2-1; each inversion puts the root on a different string.
@@ -48,8 +49,6 @@ const useLesson = (quality: Quality) =>
   useLoad(() => api.get("/api/lessons/{quality}", { path: { quality } }));
 const usePassage = (itemId: string) =>
   useLoad(() => api.get("/api/passages/{id}", { path: { id: itemId.replace(/^passage:/, "") } }));
-
-const shapeIds = (quality: string) => [0, 1, 2].map((i) => `shape:${quality}:${i}`);
 
 const positions = (frets: number[], inversion: number): Position[] =>
   frets.map((fret, i) => {
@@ -119,16 +118,9 @@ function LessonStep(props: LessonProps) {
   return <LessonBody lesson={result.data} {...props} />;
 }
 
-// A lesson rates its 3 shapes, then its first passage, then shows its challenge card;
-// on resume it picks up at the first of those its session hasn't rated.
-function LessonBody({
-  lesson, quality, card, rate, onDone, last, rated: done,
-}: { lesson: Schemas["Lesson"] } & LessonProps) {
-  const [rated, setRated] = useState(() => {
-    const items = [...shapeIds(quality), `passage:${lesson.passages[0]}`];
-    const first = items.findIndex((id) => !done.has(id));
-    return first === -1 ? items.length : first;
-  });
+// A lesson rates its 3 shapes, then its first passage, then shows its challenge card.
+function LessonBody({ lesson, quality, card, rate, onDone, last, done }: { lesson: Schemas["Lesson"] } & LessonProps) {
+  const [rated, setRated] = useState(done);
   const next = () => setRated(rated + 1);
   if (rated === 3) return <PassageStep id={`passage:${lesson.passages[0]}`} rate={rate} onDone={next} />;
   if (rated > 3) return <Challenge text={card} onDone={onDone} last={last} />;
@@ -148,7 +140,7 @@ function LessonBody({
   );
 }
 
-function Step({ step, rate, onDone, last, rated }: { step: Schemas["Step"] } & StepProps) {
+function Step({ step, rate, onDone, last, done }: { step: Schemas["Step"] } & StepProps) {
   const onRate = rate(step.id, onDone);
   switch (step.kind) {
     case "review":
@@ -165,7 +157,7 @@ function Step({ step, rate, onDone, last, rated }: { step: Schemas["Step"] } & S
           rate={rate}
           onDone={onDone}
           last={last}
-          rated={rated}
+          done={done}
         />
       );
     case "passage":
@@ -197,22 +189,23 @@ function Summary({ summary }: { summary: Schemas["Summary"] }) {
   );
 }
 
-// The item ids a step rates itself; a lesson's passage is only known once its content loads.
-const items = (step: Schemas["Step"]) =>
-  step.kind === "lesson" ? shapeIds(step.id) : step.kind === "challenge" ? [] : [step.id];
+const LESSON_ITEMS = 4; // 3 shapes and a passage
 
-// Steps are rated in order, so resume at the last step with a rating: inside it if it's a lesson,
-// which picks up at its first unrated item, otherwise at the step after it.
-function resumeAt(steps: Schemas["Step"][], rated: Set<string>) {
-  const last = steps.map((step) => items(step).some((id) => rated.has(id))).lastIndexOf(true);
-  return last === -1 || steps[last].kind === "lesson" ? Math.max(last, 0) : last + 1;
+// Ratings arrive in plan order, so count them off step by step rather than matching ids:
+// the same item can come due as a review before the lesson that rates it again.
+function resumeAt(steps: Schemas["Step"][], rated: number) {
+  for (const [index, step] of steps.entries()) {
+    if (step.kind === "lesson" ? rated <= LESSON_ITEMS : rated === 0) return { index, done: rated };
+    rated -= step.kind === "lesson" ? LESSON_ITEMS : step.kind === "challenge" ? 0 : 1;
+  }
+  return { index: steps.length, done: 0 };
 }
 
 function Run({ session }: { session: Schemas["SessionDetail"] }) {
   // Theory questions have no screen yet, so they're skipped rather than stalling the session.
   const steps = session.steps.filter((step) => step.kind !== "theory");
-  const [rated] = useState(() => new Set(session.rated));
-  const [index, setIndex] = useState(() => resumeAt(steps, rated));
+  const [resume] = useState(() => resumeAt(steps, session.rated.length));
+  const [index, setIndex] = useState(resume.index);
   const [summary, setSummary] = useState<Schemas["Summary"]>();
   const [error, setError] = useState<ApiError>();
   // A ref, not state, so a second tap in the same frame already sees the first one's request.
@@ -244,7 +237,7 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
           rate={rate}
           onDone={last ? finish : () => setIndex(index + 1)}
           last={last}
-          rated={rated}
+          done={index === resume.index ? resume.done : 0}
         />
       ) : (
         <button type="button" onClick={finish}>
