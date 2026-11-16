@@ -39,9 +39,9 @@ async function request<T>(
   return { ok: false, error: { kind: "http", status: response.status, detail: json?.detail } };
 }
 
-const method =
+const endpoint =
   <M extends Method>(name: M) =>
   <P extends PathsWith<M>>(path: P, ...[options]: Args<paths[P][M]>) =>
     request<Data<paths[P][M]>>(name.toUpperCase(), path, options as RequestOptions);
 
-export const api = { get: method("get"), post: method("post"), patch: method("patch") };
+export const api = { get: endpoint("get"), post: endpoint("post"), patch: endpoint("patch") };
