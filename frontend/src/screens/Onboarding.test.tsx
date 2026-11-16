@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -128,6 +128,40 @@ describe("Onboarding questions", () => {
 
     await waitFor(() => expect(api.post).toHaveBeenCalled());
     expect(submitted()[1].body.stuck_on).toBe(value);
+  });
+});
+
+describe("Onboarding input validation", () => {
+  const disabled = (name: RegExp) => (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
+
+  it.each([
+    ["", true],
+    ["-1", true],
+    ["1.5", true],
+    ["0", false],
+    ["12", false],
+  ])("years playing %j disables Next: %s", async (years, expected) => {
+    renderOnboarding();
+    fireEvent.change(await screen.findByLabelText(/years playing/i), { target: { value: years } });
+    click("radio", "Theory");
+
+    expect(disabled(/next/i)).toBe(expected);
+  });
+
+  it.each([
+    ["", true],
+    ["0", true],
+    ["8", true],
+    ["2.5", true],
+    ["1", false],
+    ["7", false],
+  ])("weekly goal %j disables Start practicing: %s", async (goal, expected) => {
+    renderOnboarding();
+    await answerQuestions();
+    await setUpHabit();
+    fireEvent.change(screen.getByLabelText(/weekly goal/i), { target: { value: goal } });
+
+    expect(disabled(/start practicing/i)).toBe(expected);
   });
 });
 
@@ -282,8 +316,18 @@ describe("App before onboarding", () => {
     onboarded = true;
     renderApp("/");
 
-    await waitFor(() => expect(api.get.mock.calls.map(([path]) => path)).toContain("/api/profile"));
-    await act(async () => {});
+    await screen.findByRole("heading", { name: /woodshed/i });
+    expect(screen.queryByLabelText(/years playing/i)).toBeNull();
+  });
+
+  it.each([
+    ["a 500", { kind: "http", status: 500 }],
+    ["a network error", { kind: "network" }],
+  ])("shows an error instead of redirecting on %s", async (_, error) => {
+    api.get.mockResolvedValue({ ok: false, error });
+    renderApp("/");
+
+    await screen.findByRole("alert");
     expect(screen.queryByLabelText(/years playing/i)).toBeNull();
   });
 
@@ -294,7 +338,8 @@ describe("App before onboarding", () => {
     submit();
 
     await waitFor(() => expect(api.post).toHaveBeenCalled());
-    await waitFor(() => expect(screen.queryByLabelText(/years playing/i)).toBeNull());
+    await screen.findByRole("heading", { name: /woodshed/i });
+    expect(screen.queryByLabelText(/years playing/i)).toBeNull();
     expect(screen.queryByLabelText(/^after/i)).toBeNull();
   });
 });
