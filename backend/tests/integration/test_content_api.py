@@ -29,7 +29,20 @@ LET_IT_BE = {
     "artist": "The Beatles",
     "kind": "song",
     "chords": ["C", "G", "Am", "F"],
+    "shapes": [[5, 5, 3], [12, 12, 10], [2, 1, 0], [10, 10, 8]],
     "lesson": "minor",
+}
+
+# Root-position shape per chord as (G, B, E) frets: root on G, 3rd on B, 5th on E,
+# at the lowest frets that fit in a 4-fret span. Worked out by hand from §4.
+PASSAGE_SHAPES = {
+    "la-bamba": [[5, 5, 3], [10, 10, 8], [12, 12, 10]],
+    "twist-and-shout": [[7, 7, 5], [12, 12, 10], [2, 2, 0]],
+    "sweet-home-alabama": [[7, 7, 5], [5, 5, 3], [12, 12, 10]],
+    "let-it-be": [[5, 5, 3], [12, 12, 10], [2, 1, 0], [10, 10, 8]],
+    "stand-by-me": [[2, 2, 0], [11, 10, 9], [7, 7, 5], [9, 9, 7]],
+    "passing-diminished": [[5, 5, 3], [6, 5, 3], [7, 6, 5], [12, 12, 10]],
+    "augmented-lead-in": [[5, 5, 3], [5, 5, 4], [10, 10, 8]],
 }
 
 
@@ -110,6 +123,22 @@ def test_passage_returns_its_content_and_unlock_state(client, db, completed):
     response = client.get("/api/passages/let-it-be")
     assert response.status_code == 200
     assert response.json() == LET_IT_BE | {"unlocked": completed}
+
+
+@pytest.mark.parametrize("id", PASSAGE_SHAPES)
+def test_passage_has_root_position_shape_per_chord(client, db, id):
+    assert client.get(f"/api/passages/{id}").json()["shapes"] == PASSAGE_SHAPES[id]
+
+
+def test_passages_list_has_root_position_shape_per_chord(client, db):
+    passages = client.get("/api/passages").json()
+    assert {p["id"]: p["shapes"] for p in passages} == PASSAGE_SHAPES
+
+
+def test_sharp_minor_chord_gets_its_own_frets(client, db):
+    passage = client.get("/api/passages/stand-by-me").json()
+    shapes = dict(zip(passage["chords"], passage["shapes"], strict=True))
+    assert shapes["F♯m"] == [11, 10, 9]
 
 
 def test_unknown_passage_is_404(client, db):
