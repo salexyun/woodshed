@@ -207,17 +207,19 @@ const itemsOf = (step: Schemas["Step"]) =>
 
 // Ratings arrive in plan order, so match them against the plan's items in turn rather than by id alone:
 // the same item can come due as a review before the lesson that rates it again. An entry that doesn't
-// match the next item is a duplicate, e.g. a retried rating whose first response was lost.
+// match the next item is a duplicate, e.g. a retried rating stored before ratings had positions.
+// `position` is the matched count, so it numbers the next rating like `expected` does.
 function resumeAt(steps: Schemas["Step"][], rated: string[]) {
   const expected = steps.flatMap(itemsOf);
   let count = 0;
   for (const id of rated) if (count < expected.length && id.startsWith(expected[count])) count++;
+  const position = count;
   for (const [index, step] of steps.entries()) {
     const items = itemsOf(step).length;
-    if (step.kind === "lesson" ? count <= items : count === 0) return { index, done: count };
+    if (step.kind === "lesson" ? count <= items : count === 0) return { index, done: count, position };
     count -= items;
   }
-  return { index: steps.length, done: 0 };
+  return { index: steps.length, done: 0, position };
 }
 
 function Run({ session }: { session: Schemas["SessionDetail"] }) {
@@ -231,6 +233,8 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
   const pending = useRef(false);
   // State as well, so Wrap up is disabled rather than dropped while a request is out.
   const [busy, setBusy] = useState(false);
+  // Advances only once a rating is saved, so a retry resends the same position and the server stores it once.
+  const position = useRef(resume.position);
   const path = { id: session.id };
 
   async function send<T>(request: () => Promise<ApiResult<T>>, then: (data: T) => void) {
@@ -245,7 +249,10 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
   }
   const finish = () => send(() => api.post("/api/sessions/{id}/finish", { path }), setSummary);
   const rate: Rate = (item_id, then) => (rating) =>
-    send(() => api.post("/api/sessions/{id}/ratings", { path, body: { item_id, rating } }), then);
+    send(
+      () => api.post("/api/sessions/{id}/ratings", { path, body: { item_id, rating, position: position.current } }),
+      () => (position.current++, then()),
+    );
   const last = index === steps.length - 1;
 
   if (summary) return <Summary summary={summary} />;

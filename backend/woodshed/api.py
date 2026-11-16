@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from opentelemetry import metrics, trace
 from sqlalchemy import distinct, func, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from woodshed import content, schemas
@@ -284,9 +285,29 @@ def _open_session(db: Session, id: int) -> PracticeSession:
     return session
 
 
+def _stored(db: Session, id: int, position: int | None) -> schemas.ProgressItem | None:
+    """The response to the rating already stored at this position, if any."""
+    # Ratings without a position can't be retries, so never match them.
+    if position is None:
+        return None
+    rating = db.scalar(
+        select(Rating).where(Rating.session_id == id, Rating.position == position)
+    )
+    if rating is None:
+        return None
+    # The item may have been rated again since, so rebuild the first response.
+    due_at = scheduler.due_at(rating.box_after, rating.rated_at)
+    return schemas.ProgressItem(id=rating.item_id, box=rating.box_after, due_at=due_at)
+
+
 @router.post("/sessions/{id}/ratings", response_model=schemas.ProgressItem)
-def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
+def rate(
+    id: int, body: schemas.NewRating, db: Db, now: Now
+) -> Item | schemas.ProgressItem:
     session = _open_session(db, id)
+    # A retry whose first response was lost: it already counted (§7).
+    if stored := _stored(db, id, body.position):
+        return stored
     if lesson := SHAPE_LESSONS.get(body.item_id):
         # Rate a lesson's shapes in turn, or concurrent last shapes each miss the
         # other and nobody unlocks the passages. Taken before the row lock so all
@@ -321,9 +342,17 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
             box_before=box_before,
             box_after=item.box,
             rated_at=now,
+            position=body.position,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        # A concurrent retry at this position committed first.
+        if (stored := _stored(db, id, body.position)) is None:
+            raise
+        return stored
     ratings.add(1, {"rating": body.rating})
     return item
 

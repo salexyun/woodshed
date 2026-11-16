@@ -101,6 +101,8 @@ class Plan(BaseModel):
 class NewRating(BaseModel):
     item_id: str
     rating: Rating
+    # The item's index among the plan's rated items; a retry sends the same one.
+    position: int | None = None
 
 
 class Summary(BaseModel):

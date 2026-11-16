@@ -280,6 +280,8 @@ export interface components {
             /** Item Id */
             item_id: string;
             rating: components["schemas"]["Rating"];
+            /** Position */
+            position?: number | null;
         };
         /** NewSession */
         NewSession: {

@@ -250,12 +250,14 @@ backend/woodshed/
 | GET | `/api/passages` · `/api/passages/{id}` | Passage content (song or exercise) and unlock state |
 | POST | `/api/sessions` | Start a session `{action, length}`; returns the plan |
 | GET | `/api/sessions/{id}` | One session with its stored steps and the item ids rated in it, to resume it |
-| POST | `/api/sessions/{id}/ratings` | Rate one item `{item_id, rating}`; returns its new box and `due_at` |
+| POST | `/api/sessions/{id}/ratings` | Rate one item `{item_id, rating, position}`; returns its new box and `due_at`. A rating at a `position` already rated in the session is a retry: it changes nothing and returns the original response |
 | POST | `/api/sessions/{id}/finish` | Finish a session; returns the summary |
 | GET | `/api/sessions` | Session history |
 | GET | `/api/progress` | All items with box and `due_at` |
 
 **Key user journey:** `POST /api/sessions` → `POST …/ratings` (one or more) → `POST …/finish`.
+
+`position` is optional: the 0-based index of the rated item among the plan's rated items, in plan order. A lesson counts its 3 shapes, then its passage; challenge steps count nothing. A client reuses the position when it retries a rating whose response was lost, so the rating is stored once.
 
 **Errors:**
 
@@ -273,7 +275,7 @@ The database stores the player's state only. Content IDs reference `content.py`.
 | `profile` | `id` (always 1), `years_playing`, `stuck_on`, `cue`, `weekly_goal_days`, `timezone`, `created_at` |
 | `item` | `id` (e.g. `shape:minor:1`, `passage:let-it-be`), `kind`, `box`, `due_at`, `reviews`, `last_rated_at`, `created_at` |
 | `session` | `id`, `action`, `length`, `started_at`, `finished_at`, `steps` (the plan, JSON; null for sessions from before it was stored) |
-| `rating` | `id`, `session_id` → session, `item_id` → item, `value`, `box_before`, `box_after`, `rated_at` |
+| `rating` | `id`, `session_id` → session, `item_id` → item, `value`, `box_before`, `box_after`, `rated_at`, `position` (null for ratings sent without one; unique per session) |
 
 Notes:
 

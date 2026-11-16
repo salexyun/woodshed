@@ -23,6 +23,7 @@ COLUMNS = {
         "box_before",
         "box_after",
         "rated_at",
+        "position",
     },
 }
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import ClassVar
 
-from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey
+from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -49,6 +49,10 @@ class PracticeSession(Base):
 
 class Rating(Base):
     __tablename__ = "rating"
+    # A retried rating reuses its position, so the session stores it once.
+    __table_args__ = (
+        UniqueConstraint("session_id", "position", name="rating_session_position"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[int] = mapped_column(ForeignKey("session.id"))
@@ -57,3 +61,5 @@ class Rating(Base):
     box_before: Mapped[int]
     box_after: Mapped[int]
     rated_at: Mapped[datetime]
+    # Ratings from before positions were sent have none.
+    position: Mapped[int | None]
