@@ -237,6 +237,43 @@ def test_rating_a_lesson_shape_creates_it_from_box_1(client, db, onboarded):
     assert (ratings(db)[0].box_before, ratings(db)[0].box_after) == (1, 2)
 
 
+# Onboarding placed major, so minor is next and later lessons can't start yet (§5.5).
+@pytest.mark.parametrize("lesson", ["diminished", "augmented"])
+def test_rating_shapes_after_the_next_lesson_is_422_and_stores_nothing(
+    client, db, onboarded, lesson
+):
+    session_id = start(client, "pick_a_song", passage="la-bamba")["id"]
+    shapes = [f"shape:{lesson}:{i}" for i in range(3)]
+    assert [rate(client, session_id, id).status_code for id in shapes] == [422] * 3
+    assert ratings(db) == []
+    passages = [f"passage:{p.id}" for p in PASSAGES if p.lesson == lesson]
+    assert [id for id in shapes + passages if item(db, id)] == []
+    assert client.get("/api/home").json()["next_lesson"] == "minor"
+
+
+def test_the_lesson_after_a_completed_one_creates_its_shapes_from_box_1(
+    client, db, onboarded
+):
+    session_id = start(client, "continue")["id"]
+    for id in MINOR_SHAPES:
+        rate(client, session_id, id)
+    assert rate(client, session_id, "shape:diminished:0").json()["box"] == 2
+    assert (ratings(db)[-1].box_before, ratings(db)[-1].box_after) == (1, 2)
+
+
+# Placed lessons and completed lessons are reviews, whatever the next lesson is.
+@pytest.mark.parametrize("item_id", ["shape:major:0", "shape:minor:0"])
+def test_rating_a_shape_already_in_the_items_is_accepted(
+    client, db, onboarded, item_id
+):
+    session_id = start(client, "continue")["id"]
+    for id in MINOR_SHAPES:
+        rate(client, session_id, id)
+    response = rate(client, session_id, item_id)
+    # Both sit in box 2: major by placement, minor by its easy first rating.
+    assert (response.status_code, response.json()["box"]) == (200, 3)
+
+
 LOCK_WAITERS = text(
     "SELECT count(*) FROM pg_stat_activity"
     " WHERE datname = current_database() AND wait_event_type = 'Lock'"
