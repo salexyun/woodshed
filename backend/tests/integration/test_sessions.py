@@ -130,6 +130,24 @@ def test_continue_is_409_and_creates_no_session_when_every_lesson_is_done(client
     assert db.scalars(select(PracticeSession)).all() == []
 
 
+@pytest.mark.parametrize(
+    "claimed, checks",
+    [
+        ([], {}),
+        (["minor"], {"minor": {"playing": "close", "theory_correct": True}}),
+    ],
+    ids=["nothing claimed", "nothing placed"],
+)
+def test_test_me_is_409_and_creates_no_session_before_any_item_exists(
+    client, db, claimed, checks
+):
+    onboarding = ANSWERS | {"claimed_qualities": claimed, "checks": checks}
+    assert client.post("/api/onboarding", json=onboarding).status_code == 201
+    response = client.post("/api/sessions", json={"action": "test_me", "length": "25"})
+    assert response.status_code == 409
+    assert db.scalars(select(PracticeSession)).all() == []
+
+
 def test_pick_a_song_plays_the_passage_with_a_challenge_card(client, db, onboarded):
     session = start(client, "pick_a_song", passage="la-bamba")
     assert steps(session) == [

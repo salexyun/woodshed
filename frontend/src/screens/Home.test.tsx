@@ -174,4 +174,18 @@ describe("Home", () => {
     expect(screen.queryByText(/couldn't reach the server/i)).toBeNull();
     expect(screen.queryByTestId("location")).toBeNull();
   });
+
+  it("explains a 409 from Test me when there is nothing to test yet", async () => {
+    post.mockResolvedValue({ ok: false, error: { kind: "http", status: 409, detail: "nothing to test" } });
+    renderHome();
+    await screen.findByText(/next lesson: minor/i);
+
+    fireEvent.click(button("Test me")!);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/nothing to test/i);
+    expect(alert.textContent).not.toMatch(/continue|couldn't reach the server/i);
+    expect(screen.queryByTestId("location")).toBeNull();
+    START_BUTTONS.forEach((name) => expect(button(name)!.disabled).toBe(false));
+  });
 });
