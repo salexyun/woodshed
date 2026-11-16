@@ -52,7 +52,7 @@ const DATA: Record<string, unknown> = {
 };
 
 function renderScreen() {
-  vi.mocked(api.get).mockImplementation(async (path: string) => ({ ok: true, data: DATA[path] }));
+  vi.mocked(api.get).mockImplementation(async (path: string) => ({ ok: true, data: DATA[path] as never }));
   vi.mocked(api.patch).mockResolvedValue({ ok: true, data: PROFILE });
   render(<Progress />);
 }
