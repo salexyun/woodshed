@@ -22,7 +22,7 @@ from woodshed.db import get_session
 from woodshed.domain import planner, scheduler, streak
 from woodshed.domain.placement import LESSON_ORDER, place
 from woodshed.domain.scheduler import INTERVAL_DAYS
-from woodshed.domain.theory import shape
+from woodshed.domain.theory import parse_chord, shape
 from woodshed.models import Item, PracticeSession, Profile, Rating
 
 
@@ -126,7 +126,11 @@ def _completed_lessons(db: Session) -> set[str]:
 
 
 def _passage(passage: content.Passage, completed: set[str]) -> schemas.Passage:
-    return schemas.Passage(**asdict(passage), unlocked=passage.lesson in completed)
+    return schemas.Passage(
+        **asdict(passage),
+        shapes=[shape(*parse_chord(chord), 0) for chord in passage.chords],
+        unlocked=passage.lesson in completed,
+    )
 
 
 @router.get("/passages")
