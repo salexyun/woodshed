@@ -430,6 +430,42 @@ def test_retried_rating_returns_the_original_response(client, db, onboarded, ret
     assert item(db, "passage:la-bamba").due_at == NOW + timedelta(days=3)
 
 
+def test_concurrent_retries_are_stored_once(client, db, onboarded, database_url):
+    session_id = start(client)["id"]
+    engine = create_engine(database_url)
+    arrived = []
+
+    # Holds each request after it locks the item, so both have missed the other's
+    # rating; the second then waits on the row lock and must lose at the insert.
+    class RacingSession(Session):
+        def get(self, entity, ident, **kw):
+            found = super().get(entity, ident, **kw)
+            if entity is Item:
+                hold_for_the_other_request(engine, arrived)
+            return found
+
+    def session():
+        with RacingSession(engine) as s:
+            yield s
+
+    app.dependency_overrides[get_session] = session
+    try:
+        with ThreadPoolExecutor(2) as pool:
+            responses = list(
+                pool.map(
+                    lambda _: rate(client, session_id, "passage:la-bamba", position=0),
+                    range(2),
+                )
+            )
+    finally:
+        engine.dispose()
+
+    assert [r.status_code for r in responses] == [200, 200]
+    assert responses[0].json() == responses[1].json()
+    assert [(r.box_before, r.box_after) for r in ratings(db)] == [(1, 2)]
+    assert item(db, "passage:la-bamba").reviews == 1
+
+
 def test_ratings_at_different_positions_are_stored_apart(client, db, onboarded):
     session_id = start(client, "continue")["id"]
     for position in (0, 1):
