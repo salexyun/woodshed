@@ -5,6 +5,8 @@ import { api, type ApiResult } from "./api";
 import type { components } from "./api-schema";
 import Home from "./screens/Home";
 import Onboarding from "./screens/Onboarding";
+import PickASong from "./screens/PickASong";
+import Progress from "./screens/Progress";
 
 // A layout route, so it mounts again (and re-checks) when onboarding navigates into the app.
 function RequireProfile() {
@@ -28,6 +30,8 @@ export default function App() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route element={<RequireProfile />}>
         <Route path="/" element={<Home />} />
+        <Route path="/pick-a-song" element={<PickASong />} />
+        <Route path="/progress" element={<Progress />} />
         {/* Paths without a screen yet still go through the gate. */}
         <Route path="*" element={null} />
       </Route>
