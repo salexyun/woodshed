@@ -50,6 +50,10 @@ export default function Progress() {
       {failed && <p role="alert">Couldn't reach the server. Try again.</p>}
       {boxes && (
         <div style={{ display: "grid", gridTemplateColumns: "auto repeat(3, 1fr)", gap: "0.25rem" }}>
+          <span />
+          {INVERSIONS.map((inversion) => (
+            <small key={inversion}>{inversion}</small>
+          ))}
           {QUALITIES.map((quality) => [
             <span key={quality}>{quality}</span>,
             ...INVERSIONS.map((inversion, i) => {
