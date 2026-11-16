@@ -1,0 +1,561 @@
+{
+  "window": {
+    "start": "2026-11-16T13:30:10+00:00",
+    "end": "2026-11-16T13:35:20.026818+00:00"
+  },
+  "loki": {
+    "query": "{service_name=\"woodshed\"} | severity_text=\"ERROR\"",
+    "streams": [
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836038334130763",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836038331598080",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836092395471177",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836092394233088",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836095436380136",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836095435231232",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836098495386930",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836098493128704",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836101569701000",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836101567987456",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836104621733668",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836104620048384",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836107680543795",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836107679020288",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836110720322171",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836110719220992",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836113795003089",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836113792707840",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      },
+      {
+        "stream": {
+          "detected_level": "error",
+          "exception_message": "can't compare offset-naive and offset-aware datetimes",
+          "exception_stacktrace": "Traceback (most recent call last):\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/h11_impl.py\", line 411, in run_asgi\n    result = await app(  # type: ignore[func-returns-value]\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py\", line 63, in __call__\n    return await self.app(scope, receive, send)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/applications.py\", line 1199, in __call__\n    await self._native_telemetry(\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 274, in __call__\n    await app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/applications.py\", line 96, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/asgi/__init__.py\", line 779, in __call__\n    await self.app(scope, otel_receive, otel_send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 186, in __call__\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py\", line 164, in __call__\n    await self.app(scope, receive, _send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/opentelemetry/instrumentation/fastapi/__init__.py\", line 360, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py\", line 151, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py\", line 63, in __call__\n    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py\", line 18, in __call__\n    await self.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/routing.py\", line 683, in __call__\n    await self.middleware_stack(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2811, in app\n    await route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1839, in handle\n    await self.original_router.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 2894, in handle\n    await included_router._handle_selected(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1865, in _handle_selected\n    await original_route.handle(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 1328, in handle\n    await effective_context.app(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 166, in app\n    await wrap_app_handling_exceptions(app, request)(scope, receive, send)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 53, in wrapped_app\n    raise exc\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py\", line 42, in wrapped_app\n    await app(scope, receive, sender)\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 152, in app\n    response = await f(request)\n               ^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 745, in app\n    raw_response = await run_endpoint_function(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/routing.py\", line 374, in run_endpoint_function\n    return await run_in_threadpool(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/starlette/concurrency.py\", line 34, in run_in_threadpool\n    return await anyio.to_thread.run_sync(func)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/to_thread.py\", line 65, in run_sync\n    return await get_async_backend().run_sync_in_worker_thread(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2706, in run_sync_in_worker_thread\n    return await future\n           ^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1100, in run\n    result = context.run(func, *args)\n             ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py\", line 244, in _run_sync_endpoint\n    return function(**arguments)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/api.py\", line 226, in start_session\n    steps = planner.plan(\n            ^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/planner.py\", line 47, in plan\n    reviews = [Step(\"review\", i.id) for i in due(items, now, TODAY_REVIEWS)]\n                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 54, in due\n    overdue = sorted(\n              ^^^^^^^\n  File \"/app/backend/woodshed/domain/scheduler.py\", line 55, in <genexpr>\n    (i for i in items if i.due_at <= now), key=lambda i: (i.due_at, i.id)\n                         ^^^^^^^^^^^^^^^\nTypeError: can't compare offset-naive and offset-aware datetimes\n",
+          "exception_type": "TypeError",
+          "observed_timestamp": "1794836116885364091",
+          "scope_name": "uvicorn.error",
+          "service_instance_id": "c8358f91-d701-4a43-ae59-3cadcdedd7e0",
+          "service_name": "woodshed",
+          "severity_number": "17",
+          "severity_text": "ERROR",
+          "telemetry_sdk_language": "python",
+          "telemetry_sdk_name": "opentelemetry",
+          "telemetry_sdk_version": "1.45.2"
+        },
+        "values": [
+          [
+            "1794836116882740992",
+            "Exception in ASGI application\n"
+          ]
+        ]
+      }
+    ]
+  },
+  "tempo": {
+    "query": "{ span.http.route =~ \"/api/sessions.*\" && span.http.response.status_code >= 500 }",
+    "traces": [
+      {
+        "traceID": "4feecd91acc58aa9464ab07fa65f0ae2",
+        "rootServiceName": "woodshed",
+        "rootTraceName": "POST /api/sessions",
+        "startTimeUnixNano": "1794836101558739333",
+        "durationMs": 9,
+        "spanSet": {
+          "spans": [
+            {
+              "spanID": "4f0d218d4106c04a",
+              "startTimeUnixNano": "1794836101558739333",
+              "durationNanos": "9072709",
+              "attributes": [
+                {
+                  "key": "http.response.status_code",
+                  "value": {
+                    "intValue": "500"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/sessions"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        },
+        "spanSets": [
+          {
+            "spans": [
+              {
+                "spanID": "4f0d218d4106c04a",
+                "startTimeUnixNano": "1794836101558739333",
+                "durationNanos": "9072709",
+                "attributes": [
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "500"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "/api/sessions"
+                    }
+                  }
+                ]
+              }
+            ],
+            "matched": 1
+          }
+        ],
+        "serviceStats": {
+          "woodshed": {
+            "spanCount": 10,
+            "errorCount": 3
+          }
+        }
+      },
+      {
+        "traceID": "6476ac76c9ebfab35909db929f296fc3",
+        "rootServiceName": "woodshed",
+        "rootTraceName": "POST /api/sessions",
+        "startTimeUnixNano": "1794836098483116138",
+        "durationMs": 9,
+        "spanSet": {
+          "spans": [
+            {
+              "spanID": "c4a3a52d6c1f23a0",
+              "startTimeUnixNano": "1794836098483116138",
+              "durationNanos": "9776750",
+              "attributes": [
+                {
+                  "key": "http.response.status_code",
+                  "value": {
+                    "intValue": "500"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/sessions"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        },
+        "spanSets": [
+          {
+            "spans": [
+              {
+                "spanID": "c4a3a52d6c1f23a0",
+                "startTimeUnixNano": "1794836098483116138",
+                "durationNanos": "9776750",
+                "attributes": [
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "500"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "/api/sessions"
+                    }
+                  }
+                ]
+              }
+            ],
+            "matched": 1
+          }
+        ],
+        "serviceStats": {
+          "woodshed": {
+            "spanCount": 10,
+            "errorCount": 3
+          }
+        }
+      },
+      {
+        "traceID": "35881d7784c2ce6e9906341299637447",
+        "rootServiceName": "woodshed",
+        "rootTraceName": "POST /api/sessions",
+        "startTimeUnixNano": "1794836095429381928",
+        "durationMs": 5,
+        "spanSet": {
+          "spans": [
+            {
+              "spanID": "7b00551c7932924b",
+              "startTimeUnixNano": "1794836095429381928",
+              "durationNanos": "5551667",
+              "attributes": [
+                {
+                  "key": "http.response.status_code",
+                  "value": {
+                    "intValue": "500"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/sessions"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        },
+        "spanSets": [
+          {
+            "spans": [
+              {
+                "spanID": "7b00551c7932924b",
+                "startTimeUnixNano": "1794836095429381928",
+                "durationNanos": "5551667",
+                "attributes": [
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "500"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "/api/sessions"
+                    }
+                  }
+                ]
+              }
+            ],
+            "matched": 1
+          }
+        ],
+        "serviceStats": {
+          "woodshed": {
+            "spanCount": 10,
+            "errorCount": 3
+          }
+        }
+      },
+      {
+        "traceID": "a39d4fbda3dcafab7bda19eb2d931706",
+        "rootServiceName": "woodshed",
+        "rootTraceName": "POST /api/sessions",
+        "startTimeUnixNano": "1794836092386049552",
+        "durationMs": 8,
+        "spanSet": {
+          "spans": [
+            {
+              "spanID": "bc521cb0efa82071",
+              "startTimeUnixNano": "1794836092386049552",
+              "durationNanos": "8000416",
+              "attributes": [
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/sessions"
+                  }
+                },
+                {
+                  "key": "http.response.status_code",
+                  "value": {
+                    "intValue": "500"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        },
+        "spanSets": [
+          {
+            "spans": [
+              {
+                "spanID": "bc521cb0efa82071",
+                "startTimeUnixNano": "1794836092386049552",
+                "durationNanos": "8000416",
+                "attributes": [
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "/api/sessions"
+                    }
+                  },
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "500"
+                    }
+                  }
+                ]
+              }
+            ],
+            "matched": 1
+          }
+        ],
+        "serviceStats": {
+          "woodshed": {
+            "spanCount": 10,
+            "errorCount": 3
+          }
+        }
+      },
+      {
+        "traceID": "8588a33db2da4aebc257972a874eca70",
+        "rootServiceName": "woodshed",
+        "rootTraceName": "POST /api/sessions",
+        "startTimeUnixNano": "1794836038319042971",
+        "durationMs": 12,
+        "spanSet": {
+          "spans": [
+            {
+              "spanID": "498f3f9fb32f2c4d",
+              "startTimeUnixNano": "1794836038319042971",
+              "durationNanos": "12123167",
+              "attributes": [
+                {
+                  "key": "http.response.status_code",
+                  "value": {
+                    "intValue": "500"
+                  }
+                },
+                {
+                  "key": "http.route",
+                  "value": {
+                    "stringValue": "/api/sessions"
+                  }
+                }
+              ]
+            }
+          ],
+          "matched": 1
+        },
+        "spanSets": [
+          {
+            "spans": [
+              {
+                "spanID": "498f3f9fb32f2c4d",
+                "startTimeUnixNano": "1794836038319042971",
+                "durationNanos": "12123167",
+                "attributes": [
+                  {
+                    "key": "http.response.status_code",
+                    "value": {
+                      "intValue": "500"
+                    }
+                  },
+                  {
+                    "key": "http.route",
+                    "value": {
+                      "stringValue": "/api/sessions"
+                    }
+                  }
+                ]
+              }
+            ],
+            "matched": 1
+          }
+        ],
+        "serviceStats": {
+          "woodshed": {
+            "spanCount": 10,
+            "errorCount": 3
+          }
+        }
+      }
+    ]
+  }
+}

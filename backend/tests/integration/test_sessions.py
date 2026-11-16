@@ -541,6 +541,16 @@ def test_resume_shows_the_same_steps_and_both_ratings(client, db, onboarded):
 # The key journey
 
 
+def test_journey_runs_on_the_server_clock(client, db, onboarded):
+    # Every other test freezes the clock, which hid a naive get_now (incident
+    # 20261116-133510): comparing it with stored timestamps raised a TypeError.
+    del app.dependency_overrides[get_now]
+    session = start(client)
+    assert rate(client, session["id"], MINOR_SHAPES[0]).status_code == 200
+    finish(client, session["id"])
+    assert client.get("/api/home").status_code == 200
+
+
 def test_key_journey_shows_on_home_and_progress(client, db, onboarded):
     session = start(client)
     for kind, id in steps(session):

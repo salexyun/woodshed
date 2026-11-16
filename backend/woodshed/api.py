@@ -1,7 +1,7 @@
 import random
 from collections.abc import Collection
 from dataclasses import asdict
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
@@ -27,7 +27,8 @@ from woodshed.models import Item, PracticeSession, Profile, Rating
 
 
 def get_now() -> datetime:
-    return datetime.now()
+    # Aware, because stored timestamps are timestamptz and the domain compares them.
+    return datetime.now(UTC)
 
 
 Db = Annotated[Session, Depends(get_session)]
