@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { api } from "../api";
 import type { components } from "../api-schema";
@@ -334,6 +334,27 @@ describe("Last step", () => {
     await screen.findByRole("heading", { name: /summary/i });
     expect(ratedItems()).toEqual(["shape:minor:1"]);
     expect(callsTo("/api/sessions/{id}/finish")).toHaveLength(2);
+  });
+});
+
+describe("Wrap up", () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+  afterEach(() => vi.useRealTimers());
+
+  it("is disabled while a rating is in flight", async () => {
+    let saved = (_: unknown) => {};
+    const respond = post.getMockImplementation()!;
+    post.mockImplementationOnce(() => new Promise((resolve) => (saved = resolve)));
+    start();
+    await reveal();
+    act(() => vi.advanceTimersByTime(25 * 60_000));
+
+    fireEvent.click(await button(/^easy$/i));
+
+    const wrapUp = await button(/wrap up/i);
+    expect(wrapUp).toHaveProperty("disabled", true);
+    await act(async () => saved(await respond("/api/sessions/{id}/ratings", { path: { id: SESSION_ID } })));
+    expect(wrapUp).toHaveProperty("disabled", false);
   });
 });
 

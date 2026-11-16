@@ -210,13 +210,17 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
   const [error, setError] = useState<ApiError>();
   // A ref, not state, so a second tap in the same frame already sees the first one's request.
   const pending = useRef(false);
+  // State as well, so Wrap up is disabled rather than dropped while a request is out.
+  const [busy, setBusy] = useState(false);
   const path = { id: session.id };
 
   async function send<T>(request: () => Promise<ApiResult<T>>, then: (data: T) => void) {
     if (pending.current) return;
     pending.current = true;
+    setBusy(true);
     const result = await request();
     pending.current = false;
+    setBusy(false);
     setError(result.ok ? undefined : result.error);
     if (result.ok) then(result.data);
   }
@@ -228,7 +232,7 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
   if (summary) return <Summary summary={summary} />;
   return (
     <main>
-      <Timer mode={session.length === "25" ? "countdown" : "countup"} onWrapUp={finish} />
+      <Timer mode={session.length === "25" ? "countdown" : "countup"} onWrapUp={finish} busy={busy} />
       {error && <Alert error={error} />}
       {index < steps.length ? (
         <Step

@@ -5,12 +5,12 @@ const STOP_HINT_SECONDS = 60 * 60;
 // Several ticks a second, so a late tick never skips a displayed second.
 const TICK_MS = 250;
 
-type Props = { mode: "countdown" | "countup"; onWrapUp: () => void };
+type Props = { mode: "countdown" | "countup"; onWrapUp: () => void; busy?: boolean };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 export const format = (seconds: number) => `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
 
-export default function Timer({ mode, onWrapUp }: Props) {
+export default function Timer({ mode, onWrapUp, busy = false }: Props) {
   const [start] = useState(Date.now);
   const [now, setNow] = useState(start);
   const [keptGoing, setKeptGoing] = useState(false);
@@ -30,7 +30,7 @@ export default function Timer({ mode, onWrapUp }: Props) {
       <p role="timer">{format(countingUp ? elapsed : Math.max(COUNTDOWN_SECONDS - elapsed, 0))}</p>
       {timeUp && (
         <>
-          <button type="button" onClick={onWrapUp}>
+          <button type="button" onClick={onWrapUp} disabled={busy}>
             Wrap up
           </button>
           <button type="button" onClick={() => setKeptGoing(true)}>
