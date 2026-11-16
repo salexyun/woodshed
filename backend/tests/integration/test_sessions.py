@@ -1,3 +1,4 @@
+import contextlib
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -114,6 +115,18 @@ def test_continue_is_the_next_lesson_only(client, db, onboarded):
     session = start(client, "continue")
     assert steps(session) == [("lesson", "minor")]
     assert session["steps"][0]["card"] in CHALLENGE_CARDS
+
+
+def test_continue_is_409_and_creates_no_session_when_every_lesson_is_done(client, db):
+    qualities = ["major", "minor", "diminished", "augmented"]
+    onboarding = ANSWERS | {
+        "claimed_qualities": qualities,
+        "checks": dict.fromkeys(qualities, PASS),
+    }
+    assert client.post("/api/onboarding", json=onboarding).status_code == 201
+    response = client.post("/api/sessions", json={"action": "continue", "length": "25"})
+    assert response.status_code == 409
+    assert db.scalars(select(PracticeSession)).all() == []
 
 
 def test_pick_a_song_plays_the_passage_with_a_challenge_card(client, db, onboarded):
@@ -247,6 +260,49 @@ def test_concurrent_first_ratings_of_a_shape_both_succeed(
     unlocked = db.scalars(select(Item.id).where(Item.id.in_(MINOR_PASSAGES)))
     completes_lesson = rated_before == 2
     assert sorted(unlocked) == (sorted(MINOR_PASSAGES) if completes_lesson else [])
+
+
+def test_concurrent_ratings_of_an_existing_item_both_apply(
+    client, db, onboarded, database_url
+):
+    session_id = start(client, "continue")["id"]
+    shape_id = MINOR_SHAPES[0]
+    assert rate(client, session_id, shape_id).status_code == 200
+    engine = create_engine(database_url)
+    # Holds each request after it reads the item, so without a row lock both
+    # rate from the same box. With one, the second read waits for the first
+    # commit; the first gives up waiting after the timeout and the barrier breaks.
+    barrier = threading.Barrier(2, timeout=2)
+
+    class RacingSession(Session):
+        def get(self, entity, ident, **kw):
+            found = super().get(entity, ident, **kw)
+            if entity is Item and found is not None:
+                with contextlib.suppress(threading.BrokenBarrierError):
+                    barrier.wait()
+            return found
+
+    def session():
+        with RacingSession(engine) as s:
+            yield s
+
+    app.dependency_overrides[get_session] = session
+    try:
+        with ThreadPoolExecutor(2) as pool:
+            responses = list(
+                pool.map(lambda _: rate(client, session_id, shape_id), range(2))
+            )
+    finally:
+        engine.dispose()
+
+    assert [r.status_code for r in responses] == [200, 200]
+    stored = item(db, shape_id)
+    assert (stored.box, stored.reviews) == (4, 3)
+    assert [(r.box_before, r.box_after) for r in ratings(db)] == [
+        (1, 2),
+        (2, 3),
+        (3, 4),
+    ]
 
 
 def test_two_of_3_shapes_leave_the_lesson_incomplete(client, db, onboarded):

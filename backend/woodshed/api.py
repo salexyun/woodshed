@@ -1,7 +1,7 @@
 import random
 from collections.abc import Collection
 from dataclasses import asdict
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
@@ -22,7 +22,6 @@ from woodshed.content import (
 from woodshed.db import get_session
 from woodshed.domain import planner, scheduler, streak
 from woodshed.domain.placement import LESSON_ORDER, place
-from woodshed.domain.scheduler import INTERVAL_DAYS
 from woodshed.domain.theory import parse_chord, shape
 from woodshed.models import Item, PracticeSession, Profile, Rating
 
@@ -79,7 +78,7 @@ def onboard(answers: schemas.Onboarding, db: Db, now: Now) -> Profile:
     )
     db.add(profile)
     db.add_all(
-        _new_item(id, box, now + timedelta(days=INTERVAL_DAYS[box - 1]), now)
+        _new_item(id, box, scheduler.due_at(box, now), now)
         for id, box in placement.items.items()
     )
     # Placing a quality counts as completing its lesson.
@@ -219,6 +218,8 @@ def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
             )
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
+    if body.action == "continue" and not steps:
+        raise HTTPException(409, "no next lesson")
     reviews = {i.id: i.reviews for i in rows}
     plan = [_step(s, reviews) for s in steps]
     session = PracticeSession(
@@ -266,7 +267,8 @@ def _open_session(db: Session, id: int) -> PracticeSession:
 @router.post("/sessions/{id}/ratings", response_model=schemas.ProgressItem)
 def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
     session = _open_session(db, id)
-    item = db.get(Item, body.item_id)
+    # Lock the row so concurrent ratings apply in turn instead of losing one.
+    item = db.get(Item, body.item_id, with_for_update=True)
     if item is None:
         # Lesson shapes are created by their first rating (§5.5).
         if (lesson := SHAPE_LESSONS.get(body.item_id)) is None:
@@ -287,7 +289,7 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
         )
         if created and lesson in _completed_lessons(db):
             db.add_all(_unlock_passages({lesson}, now))
-        item = db.get_one(Item, body.item_id)
+        item = db.get_one(Item, body.item_id, with_for_update=True)
     box_before = item.box
     with tracer.start_as_current_span("scheduler.rate"):
         item.box, item.due_at = scheduler.rate(item.box, body.rating, now)

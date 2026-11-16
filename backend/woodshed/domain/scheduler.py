@@ -21,13 +21,17 @@ class Item:
     last_rated_at: datetime | None = None
 
 
+def due_at(box: int, now: datetime) -> datetime:
+    return now + timedelta(days=INTERVAL_DAYS[box - 1])
+
+
 def rate(box: int, rating: Rating, now: datetime) -> tuple[int, datetime]:
     match rating:
         case Rating.EASY:
             box = min(box + 1, len(INTERVAL_DAYS))
         case Rating.UNFAMILIAR:
             box = 1
-    return box, now + timedelta(days=INTERVAL_DAYS[box - 1])
+    return box, due_at(box, now)
 
 
 def quality(item: Item) -> str | None:
