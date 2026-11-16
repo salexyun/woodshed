@@ -16,4 +16,4 @@ This builds the image, starts Postgres and the app, runs migrations and waits un
 
 The app reads `DATABASE_URL` and, optionally, `PORT` (default 8000) from the environment.
 
-`make up` also starts the telemetry stack: the OpenTelemetry Collector, Prometheus, Loki, Tempo and Grafana. Open <http://localhost:3000> for the "Woodshed: practice journey" dashboard. The app exports traces, metrics and logs over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (the standard `OTEL_*` variables apply); without it, it logs JSON lines to stderr only.
+`make up` also starts the telemetry stack: the OpenTelemetry Collector, Prometheus, Loki, Tempo and Grafana. Open <http://localhost:3000> for the "Woodshed: practice journey" dashboard. Grafana also provisions the "Practice sessions failing" alert, which posts a webhook to the on-call responder at `RESPONDER_URL` (default `http://host.docker.internal:8090/alerts`). The app exports traces, metrics and logs over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (the standard `OTEL_*` variables apply); without it, it logs JSON lines to stderr only.
