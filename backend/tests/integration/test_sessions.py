@@ -1,10 +1,11 @@
 import contextlib
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.orm import Session
 
 from woodshed.api import get_now
@@ -218,6 +219,27 @@ def test_rating_a_lesson_shape_creates_it_from_box_1(client, db, onboarded):
     assert (ratings(db)[0].box_before, ratings(db)[0].box_after) == (1, 2)
 
 
+LOCK_WAITERS = text(
+    "SELECT count(*) FROM pg_stat_activity"
+    " WHERE datname = current_database() AND wait_event_type = 'Lock'"
+)
+
+
+def hold_for_the_other_request(engine, arrived: list) -> None:
+    """Waits until the other request arrives here too or blocks on a lock.
+
+    A request that serializes on a lock never arrives while this one holds,
+    so a lock waiter ends the hold at once instead of after a timeout.
+    """
+    arrived.append(threading.get_ident())
+    deadline = time.monotonic() + 5
+    while len(arrived) < 2 and time.monotonic() < deadline:
+        with engine.connect() as monitor:
+            if monitor.scalar(LOCK_WAITERS):
+                return
+        time.sleep(0.01)
+
+
 # The second case completes the lesson, so both requests also try to unlock passages.
 @pytest.mark.parametrize("rated_before", [0, 2])
 def test_concurrent_first_ratings_of_a_shape_both_succeed(
@@ -228,14 +250,14 @@ def test_concurrent_first_ratings_of_a_shape_both_succeed(
         assert rate(client, session_id, id).status_code == 200
     shape_id = MINOR_SHAPES[rated_before]
     engine = create_engine(database_url)
-    # Holds each request after it finds the item missing, so both race to create it.
-    barrier = threading.Barrier(2, timeout=5)
+    arrived = []
 
+    # Holds each request after it finds the item missing, so both race to create it.
     class RacingSession(Session):
         def get(self, entity, ident, **kw):
             found = super().get(entity, ident, **kw)
             if entity is Item and found is None:
-                barrier.wait()
+                hold_for_the_other_request(engine, arrived)
             return found
 
     def session():
@@ -303,6 +325,38 @@ def test_concurrent_ratings_of_an_existing_item_both_apply(
         (2, 3),
         (3, 4),
     ]
+
+
+def test_concurrent_first_ratings_of_a_lessons_last_shapes_unlock_it_once(
+    client, db, onboarded, database_url
+):
+    session_id = start(client, "continue")["id"]
+    assert rate(client, session_id, MINOR_SHAPES[0]).status_code == 200
+    engine = create_engine(database_url)
+    committing = []
+
+    # Holds each request's commit until the other is committing too, so without
+    # a lesson lock both check completion before either new shape is visible.
+    @event.listens_for(engine, "commit")
+    def hold_commit(conn):
+        hold_for_the_other_request(engine, committing)
+
+    def session():
+        with Session(engine) as s:
+            yield s
+
+    app.dependency_overrides[get_session] = session
+    try:
+        with ThreadPoolExecutor(2) as pool:
+            responses = list(
+                pool.map(lambda id: rate(client, session_id, id), MINOR_SHAPES[1:])
+            )
+    finally:
+        engine.dispose()
+
+    assert [r.status_code for r in responses] == [200, 200]
+    unlocked = db.scalars(select(Item.id).where(Item.id.in_(MINOR_PASSAGES)))
+    assert sorted(unlocked) == sorted(MINOR_PASSAGES)
 
 
 def test_two_of_3_shapes_leave_the_lesson_incomplete(client, db, onboarded):
