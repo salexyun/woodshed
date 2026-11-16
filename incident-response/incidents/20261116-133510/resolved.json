@@ -1,0 +1,55 @@
+{
+  "receiver": "responder",
+  "status": "resolved",
+  "alerts": [
+    {
+      "status": "resolved",
+      "labels": {
+        "alertname": "Practice sessions failing",
+        "grafana_folder": "Woodshed"
+      },
+      "annotations": {
+        "datasource_uid": "prometheus",
+        "grafana_state_reason": "NoData",
+        "ref_id": "A",
+        "summary": "Players can't start, rate or finish a practice session."
+      },
+      "startsAt": "2026-11-16T13:41:10Z",
+      "endsAt": "2026-11-16T13:41:10Z",
+      "generatorURL": "http://localhost:3000/alerting/grafana/sessions-failing/view?orgId=1",
+      "fingerprint": "1b2417d14bcf4038",
+      "silenceURL": "http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dsessions-failing&orgId=1",
+      "dashboardURL": "",
+      "panelURL": "",
+      "ruleUID": "sessions-failing",
+      "values": {
+        "A": -1,
+        "B": -1
+      },
+      "valueString": "",
+      "orgId": 1
+    }
+  ],
+  "groupLabels": {
+    "alertname": "Practice sessions failing"
+  },
+  "commonLabels": {
+    "alertname": "Practice sessions failing",
+    "grafana_folder": "Woodshed"
+  },
+  "commonAnnotations": {
+    "datasource_uid": "prometheus",
+    "grafana_state_reason": "NoData",
+    "ref_id": "A",
+    "summary": "Players can't start, rate or finish a practice session."
+  },
+  "externalURL": "http://localhost:3000/",
+  "appVersion": "12.4.15",
+  "version": "1",
+  "groupKey": "{}:{alertname=\"Practice sessions failing\"}",
+  "truncatedAlerts": 0,
+  "orgId": 1,
+  "title": "[RESOLVED] Practice sessions failing (Woodshed)",
+  "state": "ok",
+  "message": "**Resolved**\n\nValue: A=-1, B=-1\nLabels:\n - alertname = Practice sessions failing\n - grafana_folder = Woodshed\nAnnotations:\n - datasource_uid = prometheus\n - grafana_state_reason = NoData\n - ref_id = A\n - summary = Players can't start, rate or finish a practice session.\nSource: http://localhost:3000/alerting/grafana/sessions-failing/view?orgId=1\nSilence: http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dsessions-failing&orgId=1\n"
+}
