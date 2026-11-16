@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useParams } from "react-router";
 
-import { api, type ApiResult } from "../api";
+import { api, type ApiError, type ApiResult } from "../api";
 import type { components } from "../api-schema";
 import ChallengeCard from "../components/ChallengeCard";
 import Fretboard, { type Position } from "../components/Fretboard";
@@ -11,10 +11,10 @@ import Timer, { format } from "../components/Timer";
 
 type Schemas = components["schemas"];
 type Quality = Schemas["Lesson"]["quality"];
-type Started = { plan: Schemas["Plan"]; length: Schemas["NewSession"]["length"] };
+type Failed = { ok: false; error: ApiError };
 // Builds the rating handler for one item; `then` runs once the rating is saved.
 type Rate = (itemId: string, then: () => void) => (rating: Rating) => void;
-type StepProps = { rate: Rate; onDone: () => void; last: boolean };
+type StepProps = { rate: Rate; onDone: () => void; last: boolean; rated: Set<string> };
 
 const INVERSIONS = ["root position", "1st inversion", "2nd inversion"];
 // Shapes are given low to high on strings 3-2-1; each inversion puts the root on a different string.
@@ -24,22 +24,32 @@ const SEMITONES: Record<string, number> = {
   "F♯": 6, "G♭": 6, G: 7, "A♭": 8, A: 9, "B♭": 10, B: 11,
 };
 
-// Home passes the started session in router state; #57 will let a reload fetch it instead.
-const useStarted = (): Started | undefined => useLocation().state ?? undefined;
-
 // Each step is keyed, so it remounts and loads once.
-function useLoad<T>(load: () => Promise<ApiResult<T>>): T | undefined {
-  const [data, setData] = useState<T>();
+function useLoad<T>(load: () => Promise<ApiResult<T>>): ApiResult<T> | undefined {
+  const [result, setResult] = useState<ApiResult<T>>();
   useEffect(() => {
-    load().then((result) => result.ok && setData(result.data));
+    load().then(setResult);
   }, []);
-  return data;
+  return result;
 }
+
+// Retrying can't fix a 409: the session was finished, e.g. by Wrap up while a rating was in flight.
+const Alert = ({ error }: { error: ApiError }) => (
+  <p role="alert">
+    {error.kind === "http" && error.status === 409
+      ? "This session is finished."
+      : "Couldn't reach the server. Try again."}
+  </p>
+);
+
+const Pending = ({ result }: { result?: Failed }) => (result ? <Alert error={result.error} /> : <p>Loading…</p>);
 
 const useLesson = (quality: Quality) =>
   useLoad(() => api.get("/api/lessons/{quality}", { path: { quality } }));
 const usePassage = (itemId: string) =>
   useLoad(() => api.get("/api/passages/{id}", { path: { id: itemId.replace(/^passage:/, "") } }));
+
+const shapeIds = (quality: string) => [0, 1, 2].map((i) => `shape:${quality}:${i}`);
 
 const positions = (frets: number[], inversion: number): Position[] =>
   frets.map((fret, i) => {
@@ -55,27 +65,31 @@ function transpose(frets: number[], root: string) {
 
 function ShapeReview({ id, root, onRate }: { id: string; root: string; onRate: (r: Rating) => void }) {
   const [, quality, inversion] = id.split(":") as [string, Quality, string];
-  const shape = useLesson(quality)?.shapes[Number(inversion)];
+  const lesson = useLesson(quality);
+  if (!lesson?.ok) return <Pending result={lesson} />;
+  const shape = lesson.data.shapes[Number(inversion)];
   return (
     <ReviewCard
       prompt={`Play ${root} ${quality}, ${INVERSIONS[Number(inversion)]}, on G-B-E`}
-      answer={shape && <Fretboard positions={positions(transpose(shape, root), Number(inversion))} />}
+      answer={<Fretboard positions={positions(transpose(shape, root), Number(inversion))} />}
       onRate={onRate}
     />
   );
 }
 
 function PassageReview({ id, onRate }: { id: string; onRate: (r: Rating) => void }) {
-  const passage = usePassage(id);
-  if (!passage) return <p>Loading…</p>;
+  const result = usePassage(id);
+  if (!result?.ok) return <Pending result={result} />;
+  const passage = result.data;
   return (
     <ReviewCard prompt={`Play ${passage.title}`} answer={<p>{passage.chords.join(" ")}</p>} onRate={onRate} />
   );
 }
 
-function PassageStep({ id, rate, onDone }: { id: string } & Omit<StepProps, "last">) {
-  const passage = usePassage(id);
-  if (!passage) return <p>Loading…</p>;
+function PassageStep({ id, rate, onDone }: { id: string } & Pick<StepProps, "rate" | "onDone">) {
+  const result = usePassage(id);
+  if (!result?.ok) return <Pending result={result} />;
+  const passage = result.data;
   return (
     <section>
       <h2>{passage.title}</h2>
@@ -86,7 +100,7 @@ function PassageStep({ id, rate, onDone }: { id: string } & Omit<StepProps, "las
   );
 }
 
-function Challenge({ text, onDone, last }: { text: string } & Omit<StepProps, "rate">) {
+function Challenge({ text, onDone, last }: { text: string } & Pick<StepProps, "onDone" | "last">) {
   return (
     <section>
       <ChallengeCard text={text} />
@@ -97,11 +111,25 @@ function Challenge({ text, onDone, last }: { text: string } & Omit<StepProps, "r
   );
 }
 
-function LessonStep({ quality, card, rate, onDone, last }: { quality: Quality; card: string } & StepProps) {
-  const lesson = useLesson(quality);
-  const [rated, setRated] = useState(0);
+type LessonProps = { quality: Quality; card: string } & StepProps;
+
+function LessonStep(props: LessonProps) {
+  const result = useLesson(props.quality);
+  if (!result?.ok) return <Pending result={result} />;
+  return <LessonBody lesson={result.data} {...props} />;
+}
+
+// A lesson rates its 3 shapes, then its first passage, then shows its challenge card;
+// on resume it picks up at the first of those its session hasn't rated.
+function LessonBody({
+  lesson, quality, card, rate, onDone, last, rated: done,
+}: { lesson: Schemas["Lesson"] } & LessonProps) {
+  const [rated, setRated] = useState(() => {
+    const items = [...shapeIds(quality), `passage:${lesson.passages[0]}`];
+    const first = items.findIndex((id) => !done.has(id));
+    return first === -1 ? items.length : first;
+  });
   const next = () => setRated(rated + 1);
-  if (!lesson) return <p>Loading…</p>;
   if (rated === 3) return <PassageStep id={`passage:${lesson.passages[0]}`} rate={rate} onDone={next} />;
   if (rated > 3) return <Challenge text={card} onDone={onDone} last={last} />;
   return (
@@ -120,7 +148,7 @@ function LessonStep({ quality, card, rate, onDone, last }: { quality: Quality; c
   );
 }
 
-function Step({ step, rate, onDone, last }: { step: Schemas["Step"] } & StepProps) {
+function Step({ step, rate, onDone, last, rated }: { step: Schemas["Step"] } & StepProps) {
   const onRate = rate(step.id, onDone);
   switch (step.kind) {
     case "review":
@@ -130,7 +158,16 @@ function Step({ step, rate, onDone, last }: { step: Schemas["Step"] } & StepProp
         <PassageReview id={step.id} onRate={onRate} />
       );
     case "lesson":
-      return <LessonStep quality={step.id as Quality} card={step.card ?? ""} rate={rate} onDone={onDone} last={last} />;
+      return (
+        <LessonStep
+          quality={step.id as Quality}
+          card={step.card ?? ""}
+          rate={rate}
+          onDone={onDone}
+          last={last}
+          rated={rated}
+        />
+      );
     case "passage":
       return <PassageStep id={step.id} rate={rate} onDone={onDone} />;
     case "challenge":
@@ -160,33 +197,55 @@ function Summary({ summary }: { summary: Schemas["Summary"] }) {
   );
 }
 
-function Run({ plan, length }: Started) {
-  // Theory questions have no screen yet, so they're skipped rather than stalling the session.
-  const steps = plan.steps.filter((step) => step.kind !== "theory");
-  const [index, setIndex] = useState(0);
-  const [summary, setSummary] = useState<Schemas["Summary"]>();
-  const [failed, setFailed] = useState(false);
-  const path = { id: plan.id };
+// The item ids a step rates itself; a lesson's passage is only known once its content loads.
+const items = (step: Schemas["Step"]) =>
+  step.kind === "lesson" ? shapeIds(step.id) : step.kind === "challenge" ? [] : [step.id];
 
-  const finish = async () => {
-    const result = await api.post("/api/sessions/{id}/finish", { path });
-    setFailed(!result.ok);
-    if (result.ok) setSummary(result.data);
-  };
-  const rate: Rate = (item_id, then) => async (rating) => {
-    const result = await api.post("/api/sessions/{id}/ratings", { path, body: { item_id, rating } });
-    setFailed(!result.ok);
-    if (result.ok) then();
-  };
+// Steps are rated in order, so resume at the last step with a rating: inside it if it's a lesson,
+// which picks up at its first unrated item, otherwise at the step after it.
+function resumeAt(steps: Schemas["Step"][], rated: Set<string>) {
+  const last = steps.map((step) => items(step).some((id) => rated.has(id))).lastIndexOf(true);
+  return last === -1 || steps[last].kind === "lesson" ? Math.max(last, 0) : last + 1;
+}
+
+function Run({ session }: { session: Schemas["SessionDetail"] }) {
+  // Theory questions have no screen yet, so they're skipped rather than stalling the session.
+  const steps = session.steps.filter((step) => step.kind !== "theory");
+  const [rated] = useState(() => new Set(session.rated));
+  const [index, setIndex] = useState(() => resumeAt(steps, rated));
+  const [summary, setSummary] = useState<Schemas["Summary"]>();
+  const [error, setError] = useState<ApiError>();
+  // A ref, not state, so a second tap in the same frame already sees the first one's request.
+  const pending = useRef(false);
+  const path = { id: session.id };
+
+  async function send<T>(request: () => Promise<ApiResult<T>>, then: (data: T) => void) {
+    if (pending.current) return;
+    pending.current = true;
+    const result = await request();
+    pending.current = false;
+    setError(result.ok ? undefined : result.error);
+    if (result.ok) then(result.data);
+  }
+  const finish = () => send(() => api.post("/api/sessions/{id}/finish", { path }), setSummary);
+  const rate: Rate = (item_id, then) => (rating) =>
+    send(() => api.post("/api/sessions/{id}/ratings", { path, body: { item_id, rating } }), then);
   const last = index === steps.length - 1;
 
   if (summary) return <Summary summary={summary} />;
   return (
     <main>
-      <Timer mode={length === "25" ? "countdown" : "countup"} onWrapUp={finish} />
-      {failed && <p role="alert">Couldn't reach the server. Try again.</p>}
-      {steps.length ? (
-        <Step key={index} step={steps[index]} rate={rate} onDone={last ? finish : () => setIndex(index + 1)} last={last} />
+      <Timer mode={session.length === "25" ? "countdown" : "countup"} onWrapUp={finish} />
+      {error && <Alert error={error} />}
+      {index < steps.length ? (
+        <Step
+          key={index}
+          step={steps[index]}
+          rate={rate}
+          onDone={last ? finish : () => setIndex(index + 1)}
+          last={last}
+          rated={rated}
+        />
       ) : (
         <button type="button" onClick={finish}>
           Finish
@@ -197,6 +256,10 @@ function Run({ plan, length }: Started) {
 }
 
 export default function Session() {
-  const started = useStarted();
-  return started ? <Run {...started} /> : <p>No session in progress.</p>;
+  const id = Number(useParams().id);
+  const result = useLoad(() => api.get("/api/sessions/{id}", { path: { id } }));
+  if (!result?.ok) return <Pending result={result} />;
+  // A finished session has nothing left to do, and its summary was shown when it finished.
+  if (result.data.finished_at) return <Navigate to="/" replace />;
+  return <Run session={result.data} />;
 }
