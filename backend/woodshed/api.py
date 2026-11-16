@@ -266,7 +266,8 @@ def _open_session(db: Session, id: int) -> PracticeSession:
 @router.post("/sessions/{id}/ratings", response_model=schemas.ProgressItem)
 def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
     session = _open_session(db, id)
-    item = db.get(Item, body.item_id)
+    # Lock the row so concurrent ratings apply in turn instead of losing one.
+    item = db.get(Item, body.item_id, with_for_update=True)
     if item is None:
         # Lesson shapes are created by their first rating (§5.5).
         if (lesson := SHAPE_LESSONS.get(body.item_id)) is None:
@@ -287,7 +288,7 @@ def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
         )
         if created and lesson in _completed_lessons(db):
             db.add_all(_unlock_passages({lesson}, now))
-        item = db.get_one(Item, body.item_id)
+        item = db.get_one(Item, body.item_id, with_for_update=True)
     box_before = item.box
     with tracer.start_as_current_span("scheduler.rate"):
         item.box, item.due_at = scheduler.rate(item.box, body.rating, now)
