@@ -116,3 +116,13 @@ class PastSession(BaseModel):
     started_at: datetime
     items_rated: int
     duration_seconds: int | None
+
+
+class SessionDetail(BaseModel):
+    id: int
+    action: Action
+    length: Length
+    started_at: datetime
+    finished_at: datetime | None
+    steps: list[Step]
+    rated: list[str]

@@ -314,6 +314,65 @@ def test_sessions_are_empty_before_any_session(client, db, onboarded):
     assert client.get("/api/sessions").json() == []
 
 
+# GET /api/sessions/{id}
+
+
+def get(client, session_id: int) -> dict:
+    response = client.get(f"/api/sessions/{session_id}")
+    assert response.status_code == 200
+    return response.json()
+
+
+@pytest.mark.parametrize(
+    ("action", "body"),
+    [("today", {}), ("continue", {}), ("pick_a_song", {"passage": "la-bamba"})],
+)
+def test_get_returns_the_stored_steps_with_their_cards(
+    client, db, onboarded, action, body
+):
+    session = start(client, action, **body)
+    assert get(client, session["id"])["steps"] == session["steps"]
+
+
+def test_get_returns_the_session(client, db, onboarded):
+    session = start(client, "continue", length="open")
+    stored = get(client, session["id"])
+    assert (stored["id"], stored["action"], stored["length"]) == (
+        session["id"],
+        "continue",
+        "open",
+    )
+    assert datetime.fromisoformat(stored["started_at"]) == NOW
+    assert (stored["finished_at"], stored["rated"]) == (None, [])
+
+
+def test_get_shows_when_the_session_finished(client, db, onboarded):
+    session = start(client)
+    freeze(LATER)
+    finish(client, session["id"])
+    assert datetime.fromisoformat(get(client, session["id"])["finished_at"]) == LATER
+
+
+def test_get_lists_only_this_sessions_ratings(client, db, onboarded):
+    rate(client, start(client)["id"], "passage:la-bamba")
+    session = start(client)
+    rate(client, session["id"], "shape:major:0")
+    assert get(client, session["id"])["rated"] == ["shape:major:0"]
+
+
+def test_get_unknown_session_is_404(client, db, onboarded):
+    assert client.get("/api/sessions/999").status_code == 404
+
+
+def test_resume_shows_the_same_steps_and_both_ratings(client, db, onboarded):
+    session = start(client)
+    rate(client, session["id"], "shape:major:0", "challenging")
+    rate(client, session["id"], "passage:la-bamba", "easy")
+    resumed = get(client, session["id"])
+    assert resumed["steps"] == session["steps"]
+    assert resumed["rated"] == ["shape:major:0", "passage:la-bamba"]
+
+
 # The key journey
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import ClassVar
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey
+from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -43,6 +43,8 @@ class PracticeSession(Base):
     length: Mapped[str]
     started_at: Mapped[datetime]
     finished_at: Mapped[datetime | None]
+    # Sessions from before steps were stored have none.
+    steps: Mapped[list[dict] | None] = mapped_column(JSON)
 
 
 class Rating(Base):

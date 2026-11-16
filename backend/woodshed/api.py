@@ -206,17 +206,44 @@ def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
         )
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
-    session = PracticeSession(action=body.action, length=body.length, started_at=now)
+    reviews = {i.id: i.reviews for i in rows}
+    plan = [_step(s, reviews) for s in steps]
+    session = PracticeSession(
+        action=body.action,
+        length=body.length,
+        started_at=now,
+        steps=[s.model_dump() for s in plan],
+    )
     db.add(session)
     db.commit()
-    reviews = {i.id: i.reviews for i in rows}
-    return schemas.Plan(id=session.id, steps=[_step(s, reviews) for s in steps])
+    return schemas.Plan(id=session.id, steps=plan)
+
+
+def _session(db: Session, id: int) -> PracticeSession:
+    if session := db.get(PracticeSession, id):
+        return session
+    raise HTTPException(404, "unknown session")
+
+
+@router.get("/sessions/{id}")
+def get_session_detail(id: int, db: Db) -> schemas.SessionDetail:
+    session = _session(db, id)
+    rated = db.scalars(
+        select(Rating.item_id).where(Rating.session_id == id).order_by(Rating.id)
+    )
+    return schemas.SessionDetail(
+        id=session.id,
+        action=session.action,
+        length=session.length,
+        started_at=session.started_at,
+        finished_at=session.finished_at,
+        steps=session.steps or [],
+        rated=list(rated),
+    )
 
 
 def _open_session(db: Session, id: int) -> PracticeSession:
-    session = db.get(PracticeSession, id)
-    if session is None:
-        raise HTTPException(404, "unknown session")
+    session = _session(db, id)
     if session.finished_at:
         raise HTTPException(409, "session is finished")
     return session
