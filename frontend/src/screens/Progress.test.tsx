@@ -187,4 +187,39 @@ describe("settings", () => {
 
     expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't reach the server/i);
   });
+
+  it("clears the server error when a save succeeds after a failed one", async () => {
+    renderScreen();
+    vi.mocked(api.patch).mockResolvedValueOnce({ ok: false, error: { kind: "network" } });
+    await waitFor(() =>
+      expect(screen.getByLabelText<HTMLInputElement>(/cue/i).value).toBe("after coffee"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+    expect(api.patch).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["/api/progress", "/api/sessions"])(
+    "keeps the error for a failed %s load after a successful save",
+    async (failing) => {
+      vi.mocked(api.get).mockImplementation(async (path: string) =>
+        path === failing ? { ok: false, error: { kind: "network" } } : { ok: true, data: DATA[path] as never },
+      );
+      vi.mocked(api.patch).mockResolvedValue({ ok: true, data: PROFILE });
+      render(<Progress />);
+      await screen.findByRole("alert");
+      await waitFor(() =>
+        expect(screen.getByLabelText<HTMLInputElement>(/cue/i).value).toBe("after coffee"),
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /save/i }));
+
+      await waitFor(() => expect(api.patch).toHaveBeenCalled());
+      expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't reach the server/i);
+    },
+  );
 });
