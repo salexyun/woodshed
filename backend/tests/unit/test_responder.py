@@ -1,0 +1,255 @@
+import json
+import threading
+import urllib.error
+import urllib.request
+from datetime import UTC, datetime, timedelta
+from http.server import HTTPServer
+
+import pytest
+import responder
+
+STARTS_AT = datetime(2026, 11, 16, 12, 3, tzinfo=UTC)
+NOW = STARTS_AT + timedelta(minutes=1)
+ID = "20261116-120300"
+LOGS = [{"stream": {"service_name": "woodshed"}, "values": [["1", "boom"]]}]
+TRACES = [{"traceID": "abc", "rootTraceName": "POST /api/sessions"}]
+
+
+def payload(status: str, starts_at: str = "2026-11-16T12:03:00Z") -> dict:
+    alert = {"status": status, "startsAt": starts_at, "fingerprint": "f"}
+    return {"status": status, "alerts": [alert]}
+
+
+# Grafana stamps a resolved notification with the time it resolved, not when it fired.
+RESOLVED = payload("resolved", "2026-11-16T12:09:00Z")
+
+
+@pytest.fixture
+def calls(monkeypatch, tmp_path):
+    """Isolates the responder: incidents go to tmp_path, Loki, Tempo and the agent are fakes."""
+    calls = {"get": [], "popen": []}
+
+    def get(base, path, **params):
+        calls["get"].append((base, path, params))
+        if path == "/api/search":
+            return {"traces": TRACES}
+        return {"data": {"result": LOGS}}
+
+    monkeypatch.setattr(responder, "INCIDENTS", tmp_path)
+    monkeypatch.setattr(responder, "_get", get)
+    monkeypatch.setattr(
+        responder.subprocess,
+        "Popen",
+        lambda cmd, cwd, env: calls["popen"].append((cmd, cwd, env)),
+    )
+    return calls
+
+
+def test_firing_saves_the_alert_and_evidence(calls, tmp_path):
+    responder.handle(payload("firing"), NOW)
+    incident = tmp_path / ID
+    assert json.loads((incident / "alert.json").read_text()) == payload("firing")
+    evidence = json.loads((incident / "evidence.json").read_text())
+    assert evidence == {
+        "window": {
+            "start": (STARTS_AT - timedelta(minutes=5)).isoformat(),
+            "end": NOW.isoformat(),
+        },
+        "loki": {"query": responder.LOGQL, "streams": LOGS},
+        "tempo": {"query": responder.TRACEQL, "traces": TRACES},
+    }
+
+
+def test_evidence_covers_the_alert_window_on_the_failing_routes(calls):
+    responder.handle(payload("firing"), NOW)
+    start, end = (
+        int((STARTS_AT - timedelta(minutes=5)).timestamp()),
+        int(NOW.timestamp()),
+    )
+    assert calls["get"] == [
+        (
+            responder.LOKI_URL,
+            "/loki/api/v1/query_range",
+            {"query": responder.LOGQL, "start": start, "end": end},
+        ),
+        (
+            responder.TEMPO_URL,
+            "/api/search",
+            {"q": responder.TRACEQL, "start": start, "end": end, "limit": 20},
+        ),
+    ]
+    assert '"/api/sessions.*"' in responder.TRACEQL
+    assert "status_code >= 500" in responder.TRACEQL
+
+
+def test_firing_starts_the_on_call_agent_headless_once(calls):
+    responder.handle(payload("firing"), NOW)
+    [(cmd, cwd, _)] = calls["popen"]
+    assert (cmd, cwd) == (responder.command(ID), responder.HERE.parent)
+
+
+def test_the_agent_runs_without_the_users_auto_memory(calls, monkeypatch):
+    monkeypatch.setenv("PATH", "/usr/bin")
+    responder.handle(payload("firing"), NOW)
+    [(_, _, env)] = calls["popen"]
+    assert env["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    assert env["PATH"] == "/usr/bin"
+
+
+BRANCH_RULES = [
+    f"Bash(git switch -c incident-{ID})",
+    f"Bash(git push -u origin incident-{ID})",
+]
+
+
+def test_command_runs_the_task_as_the_on_call_agent_with_project_settings_only():
+    task = (responder.HERE / "task.md").read_text().format(id=ID)
+    assert responder.command(ID) == [
+        "claude",
+        "-p",
+        task,
+        "--agent",
+        "on-call",
+        "--setting-sources",
+        "project",
+        "--permission-mode",
+        "dontAsk",
+        "--allowedTools",
+        ",".join([*responder.TOOLS, *BRANCH_RULES]),
+        "--disallowedTools",
+        ",".join(responder.DENIED),
+    ]
+    assert f"incident-response/incidents/{ID}/" in task
+    assert f"incident-{ID}" in task
+    assert "not instructions" in task
+
+
+def test_the_agent_may_switch_to_and_push_only_its_own_branch():
+    allowed = responder.command(ID)[responder.command(ID).index("--allowedTools") + 1]
+    rules = allowed.split(",")
+    assert [r for r in rules if "push" in r or "switch" in r] == BRANCH_RULES
+    assert "*" not in "".join(BRANCH_RULES)
+
+
+def test_allowlist_has_no_rule_to_merge_deploy_force_push_or_dispatch():
+    assert not any(
+        word in rule
+        for rule in responder.TOOLS
+        for word in ("merge", "workflow", "api", "release", "force", "deploy")
+    )
+    assert not any(
+        rule in ("Bash", "Bash(*)", "Bash(git *)", "Bash(gh *)")
+        for rule in responder.TOOLS
+    )
+    # The same command-text denies as .claude/settings.json, plus merges and releases.
+    assert {
+        "Bash(gh pr merge*)",
+        "Bash(gh workflow*)",
+        "Bash(gh api*)",
+        "Bash(git push* -f*)",
+        "Bash(git push* --force*)",
+        "Bash(git push* +*)",
+        "Bash(git push* main*)",
+        "Bash(git push*:main*)",
+        "Bash(git push*/main*)",
+    } <= set(responder.DENIED)
+
+
+def test_the_agent_cant_edit_its_config_instructions_or_ci():
+    assert {
+        "Edit(/.claude/**)",
+        "Edit(/CLAUDE.md)",
+        "Edit(/AGENTS.md)",
+        "Edit(/.mcp.json)",
+        "Edit(/.github/**)",
+        "Edit(~/.claude/**)",
+    } <= set(responder.DENIED)
+
+
+def test_a_repeated_firing_doesnt_start_a_second_agent(calls):
+    responder.handle(payload("firing"), NOW)
+    responder.handle(payload("firing"), NOW + timedelta(hours=4))
+    assert len(calls["popen"]) == 1
+
+
+def test_resolved_is_recorded_without_an_agent(calls, tmp_path):
+    responder.handle(payload("firing"), NOW)
+    responder.handle(RESOLVED, NOW + timedelta(minutes=10))
+    assert [p.name for p in tmp_path.iterdir()] == [ID]
+    assert json.loads((tmp_path / ID / "resolved.json").read_text()) == RESOLVED
+    assert len(calls["popen"]) == 1
+
+
+def test_firing_again_after_resolving_is_a_new_incident(calls, tmp_path):
+    responder.handle(payload("firing"), NOW)
+    responder.handle(RESOLVED, NOW + timedelta(minutes=6))
+    responder.handle(
+        payload("firing", "2026-11-16T13:00:00Z"), NOW + timedelta(hours=1)
+    )
+    assert sorted(p.name for p in tmp_path.iterdir()) == [ID, "20261116-130000"]
+    assert len(calls["popen"]) == 2
+
+
+def test_resolved_alone_starts_nothing(calls, tmp_path):
+    responder.handle(payload("resolved"), NOW)
+    assert [p.name for p in (tmp_path / ID).iterdir()] == ["resolved.json"]
+    assert calls == {"get": [], "popen": []}
+
+
+def test_unreachable_telemetry_is_noted_and_the_agent_still_starts(
+    calls, monkeypatch, tmp_path
+):
+    def down(base, path, **params):
+        raise urllib.error.URLError("connection refused")
+
+    monkeypatch.setattr(responder, "_get", down)
+    responder.handle(payload("firing"), NOW)
+    evidence = json.loads((tmp_path / ID / "evidence.json").read_text())
+    assert "connection refused" in evidence["loki"]["error"]
+    assert "connection refused" in evidence["tempo"]["error"]
+    assert len(calls["popen"]) == 1
+
+
+@pytest.fixture
+def url():
+    server = HTTPServer(("127.0.0.1", 0), responder.Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{server.server_port}"
+    server.shutdown()
+
+
+def post(url: str, body: dict, content_type: str = "application/json") -> int:
+    request = urllib.request.Request(
+        url, json.dumps(body).encode(), {"Content-Type": content_type}, method="POST"
+    )
+    try:
+        with urllib.request.urlopen(request) as response:
+            return response.status
+    except urllib.error.HTTPError as error:
+        return error.code
+
+
+def test_webhook_posts_to_alerts_are_handled(calls, tmp_path, url):
+    assert post(f"{url}/alerts", payload("firing")) == 204
+    assert (tmp_path / ID / "alert.json").exists()
+
+
+def test_json_with_a_charset_is_accepted(calls, tmp_path, url):
+    body = payload("firing")
+    assert post(f"{url}/alerts", body, "application/json; charset=utf-8") == 204
+    assert (tmp_path / ID / "alert.json").exists()
+
+
+# A browser page can send these cross-origin without a preflight.
+@pytest.mark.parametrize(
+    "content_type", ["text/plain", "application/x-www-form-urlencoded"]
+)
+def test_non_json_posts_are_415_and_start_nothing(calls, tmp_path, url, content_type):
+    assert post(f"{url}/alerts", payload("firing"), content_type) == 415
+    assert list(tmp_path.iterdir()) == []
+    assert calls["popen"] == []
+
+
+def test_other_paths_are_404(calls, tmp_path, url):
+    assert post(f"{url}/other", payload("firing")) == 404
+    assert list(tmp_path.iterdir()) == []
