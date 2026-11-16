@@ -294,7 +294,8 @@ describe("Passage diagrams", () => {
   // One figure per chord, captioned with its name and holding its diagram; the 2nd is F♯m.
   async function expectDiagrams() {
     const figures = await screen.findAllByRole("figure");
-    expect(figures.map((figure) => figure.textContent)).toEqual(standByMe.chords);
+    // Caption only: the diagram's own text (muted strings, start fret) is also inside the figure.
+    expect(figures.map((figure) => figure.querySelector("figcaption")?.textContent)).toEqual(standByMe.chords);
     for (const figure of figures) expect(within(figure).getAllByRole("img", { name: "Fretboard" })).toHaveLength(1);
     const dots = within(figures[1]).getAllByTestId("dot");
     expect(dots.map((dot) => [dot.dataset.string, dot.dataset.fret])).toEqual([
