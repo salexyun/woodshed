@@ -7,8 +7,10 @@ type PathsWith<M extends Method> = {
 
 type Json<R> = R extends { content: { "application/json": infer T } } ? T : never;
 type Data<O> = O extends { responses: infer R } ? Json<R[keyof R & (200 | 201)]> : never;
-type Options<O> = (O extends { parameters: { path: infer P } } ? { path: P } : unknown) &
-  (O extends { requestBody: { content: { "application/json": infer B } } } ? { body: B } : unknown);
+type Options<O> = (O extends { parameters: { path: infer P } } ? { path: P } : { path?: never }) &
+  (O extends { requestBody: { content: { "application/json": infer B } } }
+    ? { body: B }
+    : { body?: never });
 // The options argument is required only when the operation has path parameters or a body.
 type Args<O> = {} extends Options<O> ? [options?: Options<O>] : [options: Options<O>];
 
@@ -32,14 +34,14 @@ async function request<T>(
   const response = await fetch(url, init).catch(() => undefined);
   if (!response) return { ok: false, error: { kind: "network" } };
   const json = await response.json().catch(() => undefined);
-  return response.ok
-    ? { ok: true, data: json }
-    : { ok: false, error: { kind: "http", status: response.status, detail: json?.detail } };
+  // A 2xx that isn't JSON (e.g. the SPA's index.html) is a misrouted request, not data.
+  if (response.ok && json !== undefined) return { ok: true, data: json };
+  return { ok: false, error: { kind: "http", status: response.status, detail: json?.detail } };
 }
 
-const method =
+const endpoint =
   <M extends Method>(name: M) =>
   <P extends PathsWith<M>>(path: P, ...[options]: Args<paths[P][M]>) =>
     request<Data<paths[P][M]>>(name.toUpperCase(), path, options as RequestOptions);
 
-export const api = { get: method("get"), post: method("post"), patch: method("patch") };
+export const api = { get: endpoint("get"), post: endpoint("post"), patch: endpoint("patch") };

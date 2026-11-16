@@ -63,6 +63,17 @@ describe("successful calls", () => {
     expectTypeOf(result).toEqualTypeOf<ApiResult<components["schemas"]["ProgressItem"]>>();
   });
 
+  it("rejects options the operation doesn't take", () => {
+    // Never called: only tsc checks it.
+    const misuse = () => [
+      // @ts-expect-error GET /api/profile takes no body
+      api.get("/api/profile", { body: { cue: "x" } }),
+      // @ts-expect-error GET /api/home takes no path parameters
+      api.get("/api/home", { path: { id: 1 } }),
+    ];
+    expectTypeOf(misuse).toBeFunction();
+  });
+
   it("fills path parameters", async () => {
     respond(200, {});
     await api.get("/api/lessons/{quality}", { path: { quality: "minor" } });
@@ -96,6 +107,11 @@ describe("API errors", () => {
     fetchMock.mockResolvedValue(new Response("Internal Server Error", { status: 500 }));
     const result = await api.get("/api/profile");
     expect(result).toMatchObject({ ok: false, error: { kind: "http", status: 500 } });
+  });
+
+  it("surfaces a 2xx without a JSON body as an error", async () => {
+    fetchMock.mockResolvedValue(new Response("<!doctype html>", { status: 200 }));
+    expect(await api.get("/api/profile")).toEqual({ ok: false, error: { kind: "http", status: 200 } });
   });
 
   it("surfaces a network failure instead of throwing", async () => {
