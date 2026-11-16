@@ -302,11 +302,18 @@ def test_sessions_are_listed_newest_first(client, db, onboarded):
     response = client.get("/api/sessions")
     assert response.status_code == 200
     assert [
-        (s["id"], s["action"], s["length"], s["items_rated"], s["duration_seconds"])
+        (
+            s["id"],
+            s["action"],
+            s["length"],
+            datetime.fromisoformat(s["started_at"]),
+            s["items_rated"],
+            s["duration_seconds"],
+        )
         for s in response.json()
     ] == [
-        (second["id"], "continue", "open", 0, None),
-        (first["id"], "today", "25", 1, 25 * 60),
+        (second["id"], "continue", "open", LATER, 0, None),
+        (first["id"], "today", "25", NOW, 1, 25 * 60),
     ]
 
 
