@@ -8,7 +8,7 @@ const TICK_MS = 250;
 type Props = { mode: "countdown" | "countup"; onWrapUp: () => void };
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const format = (seconds: number) => `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
+export const format = (seconds: number) => `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
 
 export default function Timer({ mode, onWrapUp }: Props) {
   const [start] = useState(Date.now);
