@@ -1,14 +1,15 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import Response
-from starlette.types import Scope
 
 from woodshed.api import router
 from woodshed.db import get_session
@@ -26,21 +27,19 @@ def healthz(session: Annotated[Session, Depends(get_session)]) -> dict[str, str]
     return {"status": "ok"}
 
 
-class SPA(StaticFiles):
-    """Serves the built frontend, answering unknown paths with index.html for client-side routes."""
+def serve_spa(app: FastAPI, dist: Path) -> None:
+    """Serves the built frontend, answering unknown GETs with index.html for client-side routes."""
+    app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
 
-    async def get_response(self, path: str, scope: Scope) -> Response:
-        if path.partition("/")[0] == "api":
-            raise HTTPException(404)
-        try:
-            return await super().get_response(path, scope)
-        except StarletteHTTPException as e:
-            if e.status_code != 404:
-                raise
-            return await super().get_response("index.html", scope)
+    @app.exception_handler(404)
+    async def index(request: Request, exc: StarletteHTTPException) -> Response:
+        section = request.url.path.split("/")[1]
+        if request.method == "GET" and section not in {"api", "assets"}:
+            return FileResponse(dist / "index.html")
+        return await http_exception_handler(request, exc)
 
 
-# Only the container builds the SPA; in tests and dev Vite serves it instead.
+# Only the Docker image builds the SPA; without it the app serves the API alone.
 DIST = Path(__file__).parents[2] / "frontend" / "dist"
 if DIST.is_dir():
-    app.mount("/", SPA(directory=DIST))
+    serve_spa(app, DIST)
