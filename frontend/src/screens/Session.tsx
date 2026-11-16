@@ -74,13 +74,23 @@ function ShapeReview({ id, root, onRate }: { id: string; root: string; onRate: (
   );
 }
 
+// Passage shapes are all in root position.
+const Chords = ({ passage }: { passage: Schemas["Passage"] }) => (
+  <div style={{ display: "flex", flexWrap: "wrap" }}>
+    {passage.shapes.map((shape, i) => (
+      <figure key={i}>
+        <Fretboard positions={positions(shape, 0)} />
+        <figcaption>{passage.chords[i]}</figcaption>
+      </figure>
+    ))}
+  </div>
+);
+
 function PassageReview({ id, onRate }: { id: string; onRate: (r: Rating) => void }) {
   const result = usePassage(id);
   if (!result?.ok) return <Pending result={result} />;
   const passage = result.data;
-  return (
-    <ReviewCard prompt={`Play ${passage.title}`} answer={<p>{passage.chords.join(" ")}</p>} onRate={onRate} />
-  );
+  return <ReviewCard prompt={`Play ${passage.title}`} answer={<Chords passage={passage} />} onRate={onRate} />;
 }
 
 function PassageStep({ id, rate, onDone }: { id: string } & Pick<StepProps, "rate" | "onDone">) {
@@ -91,7 +101,7 @@ function PassageStep({ id, rate, onDone }: { id: string } & Pick<StepProps, "rat
     <section>
       <h2>{passage.title}</h2>
       {passage.artist && <p>{passage.artist}</p>}
-      <p>{passage.chords.join(" ")}</p>
+      <Chords passage={passage} />
       <RatingButtons onRate={rate(id, onDone)} />
     </section>
   );
