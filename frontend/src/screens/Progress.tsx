@@ -27,6 +27,7 @@ export default function Progress() {
   const [cue, setCue] = useState("");
   const [goal, setGoal] = useState("");
   const [failed, setFailed] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [rejected, setRejected] = useState(false);
 
   useEffect(() => {
@@ -45,15 +46,16 @@ export default function Progress() {
     event.preventDefault();
     const result = await api.patch("/api/profile", { body: { cue, weekly_goal_days: Number(goal) } });
     setRejected(false);
+    setSaveFailed(false);
     if (result.ok) return;
     if (result.error.kind === "http" && result.error.status === 422) setRejected(true);
-    else setFailed(true);
+    else setSaveFailed(true);
   }
 
   return (
     <main>
       <h1>Progress</h1>
-      {failed && <p role="alert">Couldn't reach the server. Try again.</p>}
+      {(failed || saveFailed) && <p role="alert">Couldn't reach the server. Try again.</p>}
       {boxes && (
         <div style={{ display: "grid", gridTemplateColumns: "auto repeat(3, 1fr)", gap: "0.25rem" }}>
           <span />

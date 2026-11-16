@@ -64,6 +64,12 @@ const passages: Record<string, Schemas["Passage"]> = {
     artist: null,
     kind: "exercise",
     chords: ["C", "C♯°", "Dm", "G"],
+    shapes: [
+      [5, 5, 3],
+      [6, 5, 3],
+      [7, 6, 5],
+      [12, 12, 10],
+    ],
     lesson: "diminished",
     unlocked: false,
   },
@@ -73,6 +79,12 @@ const passages: Record<string, Schemas["Passage"]> = {
     artist: "The Beatles",
     kind: "song",
     chords: ["C", "G", "Am", "F"],
+    shapes: [
+      [5, 5, 3],
+      [12, 12, 10],
+      [2, 1, 0],
+      [10, 10, 8],
+    ],
     lesson: "minor",
     unlocked: true,
   },
@@ -366,6 +378,20 @@ describe("Failed loads", () => {
     expect(get).not.toHaveBeenCalled();
   });
 
+  it.each(["0x10", "1e3"])("says the session wasn't found for id %s, without calling the API", async (id) => {
+    start({ id });
+
+    await screen.findByText(/session not found/i);
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("says the session wasn't found when the API returns 404", async () => {
+    start({ id: "999" });
+
+    expect((await screen.findByRole("alert")).textContent).toBe("Session not found.");
+    expect(get).toHaveBeenCalledWith("/api/sessions/{id}", { path: { id: 999 } });
+  });
+
   it("shows an alert when the session can't be loaded", async () => {
     get.mockImplementation(() => failure(500));
     start();
@@ -426,6 +452,22 @@ describe("Resume", () => {
     await screen.findByText("Rate the root position");
     await rate();
     expect(ratedItems()).toEqual(["shape:diminished:0"]);
+  });
+
+  it("resumes at the next review when a review's rating was saved twice", async () => {
+    mockApi(plan, { rated: ["shape:minor:1", "shape:minor:1"] });
+    start();
+
+    await screen.findByText("Play B♭ major, 2nd inversion, on G-B-E");
+  });
+
+  it("resumes mid-lesson at its first unrated shape when a shape's rating was saved twice", async () => {
+    mockApi(plan, { rated: [...FULL_SESSION_ITEMS.slice(0, 3), "shape:diminished:0"] });
+    start();
+
+    await screen.findByText("Rate the 1st inversion");
+    await rate();
+    expect(ratedItems()).toEqual(["shape:diminished:1"]);
   });
 
   it("resumes at the lesson's challenge once its passage is rated", async () => {
