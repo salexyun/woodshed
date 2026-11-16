@@ -145,10 +145,10 @@ let plan = reviewsThenLesson;
 let length: Schemas["NewSession"]["length"] = "25";
 
 // The screen loads the session from GET /api/sessions/{id}, so a fresh render is also a reload.
-const start = (options: { length?: Schemas["NewSession"]["length"] } = {}) => {
+const start = (options: { length?: Schemas["NewSession"]["length"]; id?: string } = {}) => {
   length = options.length ?? "25";
   return render(
-    <MemoryRouter initialEntries={[`/sessions/${SESSION_ID}`]}>
+    <MemoryRouter initialEntries={[`/sessions/${options.id ?? SESSION_ID}`]}>
       <Routes>
         <Route path="/" element={<h1>Home</h1>} />
         <Route path="/sessions/:id" element={<Session />} />
@@ -359,6 +359,13 @@ describe("Wrap up", () => {
 });
 
 describe("Failed loads", () => {
+  it("says the session wasn't found for a non-numeric id, without calling the API", async () => {
+    start({ id: "abc" });
+
+    await screen.findByText(/session not found/i);
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it("shows an alert when the session can't be loaded", async () => {
     get.mockImplementation(() => failure(500));
     start();

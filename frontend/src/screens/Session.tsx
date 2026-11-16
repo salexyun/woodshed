@@ -255,6 +255,10 @@ function Run({ session }: { session: Schemas["SessionDetail"] }) {
 
 export default function Session() {
   const id = Number(useParams().id);
+  return Number.isInteger(id) ? <Load id={id} /> : <p role="alert">Session not found.</p>;
+}
+
+function Load({ id }: { id: number }) {
   const result = useLoad(() => api.get("/api/sessions/{id}", { path: { id } }));
   if (!result?.ok) return <Pending result={result} />;
   // A finished session has nothing left to do, and its summary was shown when it finished.
