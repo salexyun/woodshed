@@ -1,13 +1,14 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { components } from "../api-schema";
 import Home from "./Home";
 
 const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("../api", () => ({ api: { get, post, patch: vi.fn() } }));
 
-const home = {
+const home: components["schemas"]["Home"] = {
   streak: 6,
   week_days: 2,
   weekly_goal_days: 4,
@@ -26,9 +27,17 @@ const LENGTHS = [
   [/open-ended/i, "open"],
 ] as const;
 
+const PLAN = { id: 7, steps: [] };
+const START_BUTTONS = ACTIONS.map(([label]) => label);
+
 function Location() {
-  const { pathname, search } = useLocation();
-  return <p data-testid="location">{pathname + search}</p>;
+  const { pathname, search, state } = useLocation();
+  return (
+    <>
+      <p data-testid="location">{pathname + search}</p>
+      <p data-testid="state">{JSON.stringify(state)}</p>
+    </>
+  );
 }
 
 function renderHome(data: Partial<typeof home> = {}) {
@@ -46,6 +55,8 @@ function renderHome(data: Partial<typeof home> = {}) {
 }
 
 const location = async () => (await screen.findByTestId("location")).textContent;
+const routerState = async () => JSON.parse((await screen.findByTestId("state")).textContent!);
+const button = (name: string) => screen.queryByRole<HTMLButtonElement>("button", { name });
 const choose = async (action: string, length: RegExp) => {
   fireEvent.click(await screen.findByRole("radio", { name: length }));
   fireEvent.click(screen.getByRole("button", { name: action }));
@@ -69,7 +80,7 @@ describe("Home", () => {
   });
 
   it("says all lessons are done when there is no next lesson", async () => {
-    renderHome({ next_lesson: null as unknown as string });
+    renderHome({ next_lesson: null });
     await screen.findByText(/all lessons done/i);
   });
 
@@ -83,13 +94,14 @@ describe("Home", () => {
   it.each(ACTIONS.flatMap(([label, action]) => LENGTHS.map(([length, value]) => [label, action, length, value] as const)))(
     "starts %s as %s with length %s",
     async (label, action, length, value) => {
-      post.mockResolvedValue({ ok: true, data: { id: 7, steps: [] } });
+      post.mockResolvedValue({ ok: true, data: PLAN });
       renderHome();
 
       await choose(label, length);
 
       expect(post).toHaveBeenCalledExactlyOnceWith("/api/sessions", { body: { action, length: value } });
       expect(await location()).toBe("/sessions/7");
+      expect(await routerState()).toEqual({ plan: PLAN, length: value });
     },
   );
 
@@ -100,5 +112,47 @@ describe("Home", () => {
 
     expect(await location()).toBe(`/pick-a-song?length=${value}`);
     expect(post).not.toHaveBeenCalled();
+  });
+
+  it("hides or disables Continue when there is no next lesson", async () => {
+    renderHome({ next_lesson: null });
+    await screen.findByText(/all lessons done/i);
+
+    const continueButton = button("Continue");
+    expect(continueButton === null || continueButton.disabled).toBe(true);
+  });
+
+  it("enables Continue when there is a next lesson", async () => {
+    renderHome();
+    await screen.findByText(/next lesson: minor/i);
+
+    expect(button("Continue")!.disabled).toBe(false);
+  });
+
+  it.each(START_BUTTONS)("disables the start buttons while %s is starting, so a double tap posts once", async (label) => {
+    let resolve!: (result: unknown) => void;
+    post.mockReturnValue(new Promise((r) => (resolve = r)));
+    renderHome();
+    await screen.findByText(/next lesson: minor/i);
+
+    fireEvent.click(button(label)!);
+    fireEvent.click(button(label)!);
+
+    await waitFor(() => START_BUTTONS.forEach((name) => expect(button(name)!.disabled).toBe(true)));
+    expect(post).toHaveBeenCalledTimes(1);
+    resolve({ ok: true, data: PLAN });
+    expect(await location()).toBe("/sessions/7");
+  });
+
+  it("shows the alert and stays on Home when starting a session fails", async () => {
+    post.mockResolvedValue({ ok: false, error: { kind: "http", status: 500 } });
+    renderHome();
+
+    await choose("Today's plan", /25 min/i);
+
+    await screen.findByRole("alert");
+    expect(screen.queryByTestId("location")).toBeNull();
+    // The alert says "Try again", so the buttons must work again.
+    START_BUTTONS.forEach((name) => expect(button(name)!.disabled).toBe(false));
   });
 });
