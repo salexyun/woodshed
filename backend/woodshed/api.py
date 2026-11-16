@@ -1,7 +1,7 @@
 import random
 from collections.abc import Collection
 from dataclasses import asdict
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
@@ -27,7 +27,7 @@ from woodshed.models import Item, PracticeSession, Profile, Rating
 
 
 def get_now() -> datetime:
-    return datetime.now(UTC)
+    return datetime.now()
 
 
 Db = Annotated[Session, Depends(get_session)]
