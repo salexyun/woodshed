@@ -18,7 +18,10 @@ lint: frontend/node_modules
 	cd frontend && npm exec --no -- tsc --noEmit
 
 # openapi-typescript needs TypeScript 5's compiler API, which TypeScript 7 dropped,
-# so it runs pinned through npm exec instead of as a dev dependency.
-types:
+# so it lives in its own locked package instead of as a frontend dev dependency.
+frontend/tools/openapi/node_modules: frontend/tools/openapi/package-lock.json
+	npm ci --prefix frontend/tools/openapi
+
+types: frontend/tools/openapi/node_modules
 	uv run --directory backend python -c "import json; from woodshed.main import app; print(json.dumps(app.openapi()))" \
-		| npm exec --yes --package=openapi-typescript@7.13.0 -- openapi-typescript -o frontend/src/api-schema.d.ts
+		| frontend/tools/openapi/node_modules/.bin/openapi-typescript -o frontend/src/api-schema.d.ts
