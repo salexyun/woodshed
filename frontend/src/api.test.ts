@@ -51,6 +51,18 @@ describe("successful calls", () => {
     expect(JSON.parse(init?.body as string)).toEqual({ cue: "after coffee" });
   });
 
+  it("posts the body to the filled path", async () => {
+    respond(200, {});
+    const result = await api.post("/api/sessions/{id}/ratings", {
+      path: { id: 7 },
+      body: { item_id: "major:E", rating: "easy" },
+    });
+    const { url, method, init } = lastCall();
+    expect([url, method]).toEqual(["/api/sessions/7/ratings", "POST"]);
+    expect(JSON.parse(init?.body as string)).toEqual({ item_id: "major:E", rating: "easy" });
+    expectTypeOf(result).toEqualTypeOf<ApiResult<components["schemas"]["ProgressItem"]>>();
+  });
+
   it("fills path parameters", async () => {
     respond(200, {});
     await api.get("/api/lessons/{quality}", { path: { quality: "minor" } });
