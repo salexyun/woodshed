@@ -53,12 +53,27 @@ def _new_item(id: str, box: int, due_at: datetime, now: datetime) -> Item:
     return Item(id=id, kind=kind, box=box, due_at=due_at, reviews=0, created_at=now)
 
 
-def _unlock_passages(lessons: Collection[str], now: datetime) -> list[Item]:
-    return [
-        _new_item(passage_item_id(p.id), 1, now, now)
+def _first_box_row(id: str, now: datetime) -> dict:
+    kind = id.partition(":")[0]
+    return {
+        "id": id,
+        "kind": kind,
+        "box": 1,
+        "due_at": now,
+        "reviews": 0,
+        "created_at": now,
+    }
+
+
+def _unlock_passages(db: Session, lessons: Collection[str], now: datetime) -> None:
+    rows = [
+        _first_box_row(passage_item_id(p.id), now)
         for p in PASSAGES
         if p.lesson in lessons
     ]
+    if rows:
+        # Idempotent, so a lesson completed twice still unlocks each passage once.
+        db.execute(insert(Item).values(rows).on_conflict_do_nothing())
 
 
 @router.get("/profile", response_model=schemas.Profile)
@@ -82,7 +97,7 @@ def onboard(answers: schemas.Onboarding, db: Db, now: Now) -> Profile:
         for id, box in placement.items.items()
     )
     # Placing a quality counts as completing its lesson.
-    db.add_all(_unlock_passages(placement.known, now))
+    _unlock_passages(db, placement.known, now)
     db.commit()
     return profile
 
@@ -267,28 +282,26 @@ def _open_session(db: Session, id: int) -> PracticeSession:
 @router.post("/sessions/{id}/ratings", response_model=schemas.ProgressItem)
 def rate(id: int, body: schemas.NewRating, db: Db, now: Now) -> Item:
     session = _open_session(db, id)
+    if lesson := SHAPE_LESSONS.get(body.item_id):
+        # Rate a lesson's shapes in turn, or concurrent last shapes each miss the
+        # other and nobody unlocks the passages. Taken before the row lock so all
+        # requests lock in one order; hashtext gives every process the same key.
+        db.execute(select(func.pg_advisory_xact_lock(func.hashtext(lesson))))
     # Lock the row so concurrent ratings apply in turn instead of losing one.
     item = db.get(Item, body.item_id, with_for_update=True)
     if item is None:
         # Lesson shapes are created by their first rating (§5.5).
-        if (lesson := SHAPE_LESSONS.get(body.item_id)) is None:
+        if lesson is None:
             raise HTTPException(404, "unknown item")
         # A concurrent first rating may create it too, so only one insert wins.
         created = db.scalar(
             insert(Item)
-            .values(
-                id=body.item_id,
-                kind="shape",
-                box=1,
-                due_at=now,
-                reviews=0,
-                created_at=now,
-            )
+            .values(_first_box_row(body.item_id, now))
             .on_conflict_do_nothing()
             .returning(Item.id)
         )
         if created and lesson in _completed_lessons(db):
-            db.add_all(_unlock_passages({lesson}, now))
+            _unlock_passages(db, {lesson}, now)
         item = db.get_one(Item, body.item_id, with_for_update=True)
     box_before = item.box
     with tracer.start_as_current_span("scheduler.rate"):
