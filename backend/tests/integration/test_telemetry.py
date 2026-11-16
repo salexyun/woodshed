@@ -2,14 +2,20 @@
 
 import json
 import logging
+from typing import Annotated
 
 import pytest
+from fastapi import Depends
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from woodshed import db as woodshed_db
 from woodshed.main import app
 
 CUE = "zebra-marmalade-7731 after the kettle"
+ROW_CUE = "narwhal-teaspoon-4410 before bed"
 PASS = {"playing": "got_it", "theory_correct": True}
 ANSWERS = {
     "years_playing": 3,
@@ -50,6 +56,44 @@ def journey(client) -> None:
     )
     assert rating.status_code == 200
     assert client.post(f"/api/sessions/{plan['id']}/finish").status_code == 200
+
+
+@pytest.fixture
+def constraint_violation(client, caplog) -> list[str]:
+    """The app's log lines from a request whose insert of a row holding free text
+    breaks a NOT NULL constraint.
+
+    No real constraint on `profile` can fail yet, so a test-only route inserts into a
+    temporary table through the app's own session. Postgres puts the whole row in the
+    error's DETAIL. The failure is logged the way uvicorn logs unhandled exceptions."""
+
+    def insert(session: Annotated[Session, Depends(woodshed_db.get_session)]) -> None:
+        session.execute(text("CREATE TEMP TABLE probe (cue text, n int NOT NULL)"))
+        session.execute(text("INSERT INTO probe VALUES (:cue, NULL)"), {"cue": ROW_CUE})
+
+    app.add_api_route("/test/constraint-violation", insert, methods=["POST"])
+    try:
+        with pytest.raises(IntegrityError) as caught:
+            client.post("/test/constraint-violation")
+        logging.getLogger("uvicorn.error").error(
+            "Exception in ASGI application\n", exc_info=caught.value
+        )
+    finally:
+        app.router.routes.pop()
+    return [f.format(r) for r in caplog.records for f in app_formatters()]
+
+
+def span_dump(spans) -> list:
+    """Everything a span exports that could carry text: name, status, attributes, events."""
+    return [
+        (
+            s.name,
+            s.status.description,
+            dict(s.attributes),
+            [(e.name, dict(e.attributes)) for e in s.events],
+        )
+        for s in spans.get_finished_spans()
+    ]
 
 
 def data_points(reader, keep=lambda name: True) -> list:
@@ -167,3 +211,24 @@ def test_no_free_text_reaches_telemetry(journey, spans, metric_reader, caplog):
     for telemetry in map(str, (traced, labels, logs)):
         assert "zebra-marmalade" not in telemetry
         assert "quokka-onboarding" not in telemetry
+
+
+def test_database_errors_reach_spans_and_logs(constraint_violation, spans):
+    db_span = next(
+        s
+        for s in spans.get_finished_spans()
+        if s.attributes.get("db.system") == "postgresql" and "INSERT" in s.name
+    )
+    assert "not-null constraint" in (db_span.status.description or "")
+    assert any("not-null constraint" in line for line in constraint_violation)
+
+
+@pytest.mark.parametrize("leak", ["narwhal-teaspoon", "Failing row contains"])
+def test_database_error_detail_stays_out_of_spans(constraint_violation, spans, leak):
+    assert leak not in str(span_dump(spans))
+
+
+@pytest.mark.parametrize("leak", ["narwhal-teaspoon", "Failing row contains"])
+def test_database_error_detail_stays_out_of_logs(constraint_violation, leak):
+    assert constraint_violation
+    assert leak not in str(constraint_violation)
