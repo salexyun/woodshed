@@ -220,10 +220,14 @@ def test_no_free_text_reaches_telemetry(journey, spans, metric_reader, caplog):
 
 def test_database_errors_reach_spans_and_logs(constraint_violation, spans):
     db_span = next(
-        s
-        for s in spans.get_finished_spans()
-        if s.attributes.get("db.system") == "postgresql" and "INSERT" in s.name
+        (
+            s
+            for s in spans.get_finished_spans()
+            if s.attributes.get("db.system") == "postgresql" and "INSERT" in s.name
+        ),
+        None,
     )
+    assert db_span, "no psycopg span for the INSERT"
     assert "not-null constraint" in (db_span.status.description or "")
     assert any("not-null constraint" in line for line in constraint_violation)
 
