@@ -28,6 +28,8 @@ const A_TRIADS: Record<Quality, string> = {
   diminished: "A C E♭",
   augmented: "A C♯ E♯",
 };
+const isWhole = (value: string, min: number, max = Infinity) =>
+  value !== "" && Number.isInteger(Number(value)) && Number(value) >= min && Number(value) <= max;
 const TOP_STRINGS = [3, 2, 1] as const;
 // One column, since the phone sits on a music stand (§9).
 const STACK = { display: "grid", gap: "0.75rem", justifyItems: "start" } as const;
@@ -137,7 +139,7 @@ export default function Onboarding() {
             </label>
           ))}
         </fieldset>
-        <button type="button" disabled={!years || !stuck} onClick={() => setAsked(true)}>
+        <button type="button" disabled={!isWhole(years, 0) || !stuck} onClick={() => setAsked(true)}>
           Next
         </button>
       </main>
@@ -160,7 +162,7 @@ export default function Onboarding() {
         Weekly goal (days)
         <input type="number" min={1} max={7} value={weeklyGoal} onChange={(e) => setWeeklyGoal(e.target.value)} />
       </label>
-      <button type="button" disabled={!cue.trim()} onClick={submit}>
+      <button type="button" disabled={!cue.trim() || !isWhole(weeklyGoal, 1, 7)} onClick={submit}>
         Start practicing
       </button>
       {failed && <p role="alert">Couldn't save. Try again.</p>}
