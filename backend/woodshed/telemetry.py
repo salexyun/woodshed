@@ -63,6 +63,8 @@ def setup(app: FastAPI) -> None:
     for logger in map(logging.getLogger, ("uvicorn", "uvicorn.access")):
         logger.handlers.clear()
         logger.propagate = True
+    # Docker's healthcheck hits /healthz every 2 s; its access lines are noise.
+    logging.getLogger("uvicorn.access").addFilter(lambda r: r.args[2] != "/healthz")
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
         _export_otlp()
     # Only the stable HTTP conventions label request metrics with http.route.
