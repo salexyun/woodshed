@@ -99,17 +99,34 @@ def command(id: str) -> list[str]:
     ]
 
 
+def _open_incident(fingerprint: str) -> Path | None:
+    # Grafana stamps a resolved notification with a new startsAt, so match on the
+    # alert's fingerprint, which stays the same while its labels do.
+    return next(
+        (
+            alert.parent
+            for alert in INCIDENTS.glob("*/alert.json")
+            if not (alert.parent / "resolved.json").exists()
+            and json.loads(alert.read_text())["alerts"][0]["fingerprint"] == fingerprint
+        ),
+        None,
+    )
+
+
 def handle(payload: dict, now: datetime) -> None:
-    start = datetime.fromisoformat(payload["alerts"][0]["startsAt"])
+    alert = payload["alerts"][0]
+    start = datetime.fromisoformat(alert["startsAt"])
     id = f"{start:%Y%m%d-%H%M%S}"
-    incident = INCIDENTS / id
+    open_incident = _open_incident(alert["fingerprint"])
     if payload["status"] == "resolved":
+        incident = open_incident or INCIDENTS / id
         incident.mkdir(parents=True, exist_ok=True)
         (incident / "resolved.json").write_text(json.dumps(payload, indent=2))
         return
     # Grafana repeats the notification while the alert fires; one agent per incident.
-    if incident.exists():
+    if open_incident:
         return
+    incident = INCIDENTS / id
     incident.mkdir(parents=True)
     (incident / "alert.json").write_text(json.dumps(payload, indent=2))
     packet = evidence(start - WINDOW, now)

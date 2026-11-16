@@ -15,9 +15,13 @@ LOGS = [{"stream": {"service_name": "woodshed"}, "values": [["1", "boom"]]}]
 TRACES = [{"traceID": "abc", "rootTraceName": "POST /api/sessions"}]
 
 
-def payload(status: str) -> dict:
-    alert = {"status": status, "startsAt": "2026-11-16T12:03:00Z", "fingerprint": "f"}
+def payload(status: str, starts_at: str = "2026-11-16T12:03:00Z") -> dict:
+    alert = {"status": status, "startsAt": starts_at, "fingerprint": "f"}
     return {"status": status, "alerts": [alert]}
+
+
+# Grafana stamps a resolved notification with the time it resolved, not when it fired.
+RESOLVED = payload("resolved", "2026-11-16T12:09:00Z")
 
 
 @pytest.fixture
@@ -132,10 +136,20 @@ def test_a_repeated_firing_doesnt_start_a_second_agent(calls):
 
 def test_resolved_is_recorded_without_an_agent(calls, tmp_path):
     responder.handle(payload("firing"), NOW)
-    responder.handle(payload("resolved"), NOW + timedelta(minutes=10))
-    incident = tmp_path / ID
-    assert json.loads((incident / "resolved.json").read_text()) == payload("resolved")
+    responder.handle(RESOLVED, NOW + timedelta(minutes=10))
+    assert [p.name for p in tmp_path.iterdir()] == [ID]
+    assert json.loads((tmp_path / ID / "resolved.json").read_text()) == RESOLVED
     assert len(calls["popen"]) == 1
+
+
+def test_firing_again_after_resolving_is_a_new_incident(calls, tmp_path):
+    responder.handle(payload("firing"), NOW)
+    responder.handle(RESOLVED, NOW + timedelta(minutes=6))
+    responder.handle(
+        payload("firing", "2026-11-16T13:00:00Z"), NOW + timedelta(hours=1)
+    )
+    assert sorted(p.name for p in tmp_path.iterdir()) == [ID, "20261116-130000"]
+    assert len(calls["popen"]) == 2
 
 
 def test_resolved_alone_starts_nothing(calls, tmp_path):
