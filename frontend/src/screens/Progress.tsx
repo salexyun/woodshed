@@ -41,7 +41,10 @@ export default function Progress() {
   async function save(event: FormEvent) {
     event.preventDefault();
     const result = await api.patch("/api/profile", { body: { cue, weekly_goal_days: Number(goal) } });
-    setRejected(!result.ok);
+    setRejected(false);
+    if (result.ok) return;
+    if (result.error.kind === "http" && result.error.status === 422) setRejected(true);
+    else setFailed(true);
   }
 
   return (
@@ -97,19 +100,22 @@ export default function Progress() {
           </tbody>
         </table>
       )}
-      <form onSubmit={save} style={{ display: "grid", gap: "0.5rem" }}>
-        <label>
-          Cue <input value={cue} onChange={(e) => setCue(e.target.value)} />
-        </label>
-        <label>
-          Weekly goal (days){" "}
-          <input type="number" min={1} max={7} value={goal} onChange={(e) => setGoal(e.target.value)} />
-        </label>
-        {rejected && <p role="alert">Couldn't save. The cue can't be empty and the goal is 1 to 7 days.</p>}
-        <button type="submit" style={{ padding: "0.75rem", fontSize: "1rem" }}>
-          Save
-        </button>
-      </form>
+      {/* The profile also sets the date format, so the form waits for it instead of saving blanks. */}
+      {date && (
+        <form onSubmit={save} style={{ display: "grid", gap: "0.5rem" }}>
+          <label>
+            Cue <input value={cue} onChange={(e) => setCue(e.target.value)} />
+          </label>
+          <label>
+            Weekly goal (days){" "}
+            <input type="number" min={1} max={7} value={goal} onChange={(e) => setGoal(e.target.value)} />
+          </label>
+          {rejected && <p role="alert">Couldn't save. The cue can't be empty and the goal is 1 to 7 days.</p>}
+          <button type="submit" style={{ padding: "0.75rem", fontSize: "1rem" }}>
+            Save
+          </button>
+        </form>
+      )}
     </main>
   );
 }
