@@ -84,10 +84,11 @@ const summary: Schemas["Summary"] = {
 };
 
 const ok = (data: unknown) => Promise.resolve({ ok: true, data });
-const notFound = () =>
-  Promise.resolve({ ok: false, error: { kind: "http", status: 404, detail: "not mocked" } });
+const failure = (status: number) =>
+  Promise.resolve({ ok: false, error: { kind: "http", status, detail: "mocked failure" } });
+const notFound = () => failure(404);
 
-function mockApi(plan: Schemas["Plan"]) {
+function mockApi(plan: Schemas["Plan"], { rated = [] as string[], finished_at = null as string | null } = {}) {
   post.mockImplementation((path, init) => {
     if (init?.path?.id !== plan.id) return notFound();
     if (path === "/api/sessions/{id}/ratings")
@@ -96,6 +97,8 @@ function mockApi(plan: Schemas["Plan"]) {
     return notFound();
   });
   get.mockImplementation((path, init) => {
+    if (path === "/api/sessions/{id}" && init?.path?.id === plan.id)
+      return ok({ ...plan, action: "today", length, started_at: "2026-11-16T09:00:00Z", finished_at, rated });
     // Shape reviews load their quality's lesson for the shape; the diminished content stands in for all.
     if (path === "/api/lessons/{quality}") return ok({ ...lesson, quality: init?.path?.quality });
     const passage = path === "/api/passages/{id}" && passages[String(init?.path?.id)];
@@ -128,17 +131,20 @@ async function playThroughLesson() {
 }
 
 let plan = reviewsThenLesson;
+let length: Schemas["NewSession"]["length"] = "25";
 
-// Home posts /api/sessions and navigates here with the plan, since no endpoint
-// returns a started session's plan yet (see #20).
-const start = ({ length = "25" }: { length?: Schemas["NewSession"]["length"] } = {}) =>
-  render(
-    <MemoryRouter initialEntries={[{ pathname: `/sessions/${SESSION_ID}`, state: { plan, length } }]}>
+// The screen loads the session from GET /api/sessions/{id}, so a fresh render is also a reload.
+const start = (options: { length?: Schemas["NewSession"]["length"] } = {}) => {
+  length = options.length ?? "25";
+  return render(
+    <MemoryRouter initialEntries={[`/sessions/${SESSION_ID}`]}>
       <Routes>
+        <Route path="/" element={<h1>Home</h1>} />
         <Route path="/sessions/:id" element={<Session />} />
       </Routes>
     </MemoryRouter>,
   );
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -256,5 +262,111 @@ describe("Full session", () => {
     screen.getByText(/6 items rated/i);
     screen.getByText(/5-day streak/i);
     expect(screen.getAllByRole("listitem")).toHaveLength(summary.next_due.length);
+  });
+});
+
+describe("Pending requests", () => {
+  it("posts one rating when the buttons are tapped twice", async () => {
+    start();
+    await reveal();
+    const easy = await button(/^easy$/i);
+
+    fireEvent.click(easy);
+    fireEvent.click(easy);
+
+    await screen.findByText("Play B♭ major, 2nd inversion, on G-B-E");
+    expect(ratedItems()).toEqual(["shape:minor:1"]);
+  });
+
+  it("stays on the card when a rating is rejected, and the retry advances", async () => {
+    post.mockImplementationOnce(() => failure(500));
+    start();
+    await reveal();
+
+    fireEvent.click(await button(/^easy$/i));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/couldn't reach the server/i);
+    screen.getByText("Play F♯ minor, 1st inversion, on G-B-E");
+    await rate();
+    await screen.findByText("Play B♭ major, 2nd inversion, on G-B-E");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says the session is finished when a rating gets a 409", async () => {
+    post.mockImplementationOnce(() => failure(409));
+    start();
+    await reveal();
+
+    fireEvent.click(await button(/^easy$/i));
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/session is finished/i);
+  });
+});
+
+describe("Failed loads", () => {
+  it("shows an alert when the session can't be loaded", async () => {
+    get.mockImplementation(() => failure(500));
+    start();
+
+    await screen.findByRole("alert");
+    expect(screen.queryByText(/loading/i)).toBeNull();
+  });
+
+  it("shows an alert when a step's content can't be loaded", async () => {
+    plan = standalonePassage;
+    mockApi(plan);
+    const loadSession = get.getMockImplementation()!;
+    get.mockImplementation((path, init) => (path === "/api/passages/{id}" ? failure(500) : loadSession(path, init)));
+    start();
+
+    await screen.findByRole("alert");
+    expect(screen.queryByText(/loading/i)).toBeNull();
+  });
+});
+
+describe("Resume", () => {
+  it("loads the session named by the route", async () => {
+    start();
+
+    await screen.findByText("Play F♯ minor, 1st inversion, on G-B-E");
+    expect(get).toHaveBeenCalledWith("/api/sessions/{id}", { path: { id: SESSION_ID } });
+  });
+
+  it("resumes mid-reviews at the first unrated review", async () => {
+    mockApi(plan, { rated: ["shape:minor:1"] });
+    start();
+
+    await screen.findByText("Play B♭ major, 2nd inversion, on G-B-E");
+  });
+
+  it("resumes mid-lesson at its first unrated shape", async () => {
+    mockApi(plan, { rated: FULL_SESSION_ITEMS.slice(0, 3) });
+    start();
+
+    await screen.findByText("Rate the 1st inversion");
+    await rate();
+    expect(ratedItems()).toEqual(["shape:diminished:1"]);
+  });
+
+  it("resumes at the lesson's challenge once its passage is rated", async () => {
+    mockApi(plan, { rated: FULL_SESSION_ITEMS });
+    start();
+
+    await screen.findByText(CARD);
+  });
+
+  it("resumes at a passage's challenge once the passage is rated", async () => {
+    plan = standalonePassage;
+    mockApi(plan, { rated: ["passage:let-it-be"] });
+    start();
+
+    await screen.findByText("Same chords, reggae offbeat strum.");
+  });
+
+  it("sends the player home when the session is finished", async () => {
+    mockApi(plan, { rated: FULL_SESSION_ITEMS, finished_at: "2026-11-16T09:25:00Z" });
+    start();
+
+    await screen.findByRole("heading", { name: "Home" });
   });
 });
