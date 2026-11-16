@@ -14,5 +14,6 @@ RUN uv sync --locked --no-dev
 COPY backend/ ./
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
 EXPOSE 8000
+USER nobody
 # Render sets PORT; locally it defaults to 8000.
 CMD alembic upgrade head && exec uvicorn woodshed.main:app --host 0.0.0.0 --port ${PORT:-8000}
