@@ -96,7 +96,8 @@ function mockApi(plan: Schemas["Plan"]) {
     return notFound();
   });
   get.mockImplementation((path, init) => {
-    if (path === "/api/lessons/{quality}" && init?.path?.quality === lesson.quality) return ok(lesson);
+    // Shape reviews load their quality's lesson for the shape; the diminished content stands in for all.
+    if (path === "/api/lessons/{quality}") return ok({ ...lesson, quality: init?.path?.quality });
     const passage = path === "/api/passages/{id}" && passages[String(init?.path?.id)];
     return passage ? ok(passage) : notFound();
   });
