@@ -20,7 +20,7 @@ The app reads `DATABASE_URL` and, optionally, `PORT` (default 8000) from the env
 
 ## On-call responder
 
-When "Practice sessions failing" fires, the responder saves the alert and an evidence packet (Loki error logs and Tempo traces of failing `/api/sessions*` requests) to `incident-response/incidents/<id>/`. It then starts the on-call agent headless (`claude -p` with [`incident-response/task.md`](incident-response/task.md)). The agent fixes the bug on `incident-<id>` and opens a PR against the branch the responder's checkout is on. Its tool allowlist can't merge, deploy, force-push or dispatch workflows. A resolved alert is recorded as `resolved.json` and starts nothing.
+When "Practice sessions failing" fires, the responder saves the alert and an evidence packet (Loki error logs and Tempo traces of failing `/api/sessions*` requests) to `incident-response/incidents/<id>/`. It then starts the on-call agent headless (`claude -p` with [`incident-response/task.md`](incident-response/task.md)). The agent fixes the bug on `incident-<id>` and opens a PR against the branch the responder's checkout is on, so that branch must be on `origin`. Its tool allowlist can't merge, deploy, force-push or dispatch workflows. A resolved alert is recorded as `resolved.json` and starts nothing.
 
 Run it from a checkout of the deployed branch, with Python 3.12+, Claude Code and `gh` signed in:
 

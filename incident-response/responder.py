@@ -104,10 +104,10 @@ def _open_incident(fingerprint: str) -> Path | None:
     # alert's fingerprint, which stays the same while its labels do.
     return next(
         (
-            alert.parent
-            for alert in INCIDENTS.glob("*/alert.json")
-            if not (alert.parent / "resolved.json").exists()
-            and json.loads(alert.read_text())["alerts"][0]["fingerprint"] == fingerprint
+            saved.parent
+            for saved in INCIDENTS.glob("*/alert.json")
+            if not (saved.parent / "resolved.json").exists()
+            and json.loads(saved.read_text())["alerts"][0]["fingerprint"] == fingerprint
         ),
         None,
     )

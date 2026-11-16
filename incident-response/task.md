@@ -8,6 +8,6 @@ Follow your instructions as the on-call agent, with these specifics:
 2. Branch with `git switch -c incident-{id}`.
 3. Diagnose with the evidence and Grafana (read-only), reproduce with a failing test, fix, then run `make lint` and `make test`.
 4. Write `incident-response/incidents/{id}/report.md` and commit it with `alert.json`, `evidence.json` and the fix.
-5. Push with `git push -u origin incident-{id}` and open the PR with `gh pr create --base <the branch from step 1> --title "fix: <symptom> (incident {id})" --body-file <file>`. The body links the report.
+5. Push with `git push -u origin incident-{id}` and open the PR with `gh pr create --base <the branch from step 1> --title "fix: <symptom> (incident {id})" --body-file <file>`, writing the body to a file outside the repo (you can't delete files). The body links the report.
 
 Your tools are a fixed allowlist: you can't merge, deploy, force-push or dispatch workflows. If something you need is denied, say so in the report instead of working around it.
