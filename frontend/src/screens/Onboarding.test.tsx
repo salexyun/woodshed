@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "../App";
+import type { components } from "../api-schema";
 import Onboarding from "./Onboarding";
 
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn() }));
@@ -14,6 +15,14 @@ const PROFILE = {
   cue: "after dinner",
   weekly_goal_days: 4,
   timezone: "Asia/Seoul",
+};
+const HOME: components["schemas"]["Home"] = {
+  streak: 0,
+  week_days: 0,
+  weekly_goal_days: 4,
+  due_count: 0,
+  next_lesson: "major",
+  cue: "after dinner",
 };
 const NOT_FOUND = { ok: false, error: { kind: "http", status: 404, detail: "not onboarded" } };
 // Root-position C shapes on G-B-E, the first root in the rotation (§5.1).
@@ -41,6 +50,7 @@ beforeEach(() => {
   });
   api.get.mockImplementation(async (path: string, init?: { path?: { quality: Quality } }) => {
     if (path === "/api/profile") return onboarded ? { ok: true, data: PROFILE } : NOT_FOUND;
+    if (path === "/api/home") return { ok: true, data: HOME };
     if (path === "/api/lessons/{quality}") {
       const quality = init!.path!.quality;
       const shapes = [C_SHAPES[quality], [0, 0, 0], [0, 0, 0]];
@@ -316,7 +326,8 @@ describe("App before onboarding", () => {
     onboarded = true;
     renderApp("/");
 
-    await screen.findByRole("heading", { name: /woodshed/i });
+    await screen.findByRole("button", { name: "Today's plan" });
+    await screen.findByText(/next lesson: major/i);
     expect(screen.queryByLabelText(/years playing/i)).toBeNull();
   });
 
@@ -338,7 +349,8 @@ describe("App before onboarding", () => {
     submit();
 
     await waitFor(() => expect(api.post).toHaveBeenCalled());
-    await screen.findByRole("heading", { name: /woodshed/i });
+    await screen.findByRole("button", { name: "Today's plan" });
+    await screen.findByText(/next lesson: major/i);
     expect(screen.queryByLabelText(/years playing/i)).toBeNull();
     expect(screen.queryByLabelText(/^after/i)).toBeNull();
   });
