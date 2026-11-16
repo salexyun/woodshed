@@ -88,4 +88,6 @@ Every test in `test_sessions.py`, `test_profile.py` and `test_home_progress.py` 
 3. **Exercise the real clock more widely.** Consider having one shared clock fixture that keeps the timezone (for example, a frozen clock that asserts `tzinfo` is set), so a naive clock fails every suite, not just telemetry.
 4. **Alert ratio hides a total outage.** Fast `GET /api/sessions` reads dilute the ratio: a 100% failure to start sessions showed as 54%. A per-route or `POST`-only ratio would show the real impact. (Not changed here: Grafana is read-only for on-call.)
 
+**PR not opened:** the base branch `drill-session-clock` exists only locally, not on `origin`, so `gh pr create --base drill-session-clock` failed ("Base ref must be a branch"). The fix branch `incident-20261116-133510` is pushed. Opening the PR needs a human to push `drill-session-clock`, or to choose another base.
+
 No tools were denied that the diagnosis needed. Targeted `pytest` runs and ad-hoc Python weren't on the allowlist, so I checked the failing test with `make test`.
