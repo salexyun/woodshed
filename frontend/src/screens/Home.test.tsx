@@ -44,6 +44,10 @@ function renderHome(data: Partial<typeof home> = {}) {
   get.mockImplementation(async (path: string) =>
     path === "/api/home" ? { ok: true, data: { ...home, ...data } } : { ok: false, error: { kind: "network" } },
   );
+  renderScreen();
+}
+
+function renderScreen() {
   render(
     <MemoryRouter initialEntries={["/"]}>
       <Routes>
@@ -154,5 +158,20 @@ describe("Home", () => {
     expect(screen.queryByTestId("location")).toBeNull();
     // The alert says "Try again", so the buttons must work again.
     START_BUTTONS.forEach((name) => expect(button(name)!.disabled).toBe(false));
+  });
+
+  it.each([
+    ["still loading", () => new Promise(() => {})],
+    ["failed to load", async () => ({ ok: false, error: { kind: "network" } })],
+  ])("explains a 409 from Continue when every lesson is done and Home %s", async (_, getHome) => {
+    get.mockImplementation(getHome);
+    post.mockResolvedValue({ ok: false, error: { kind: "http", status: 409, detail: "no next lesson" } });
+    renderScreen();
+
+    fireEvent.click(button("Continue")!);
+
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/lessons/i));
+    expect(screen.queryByText(/couldn't reach the server/i)).toBeNull();
+    expect(screen.queryByTestId("location")).toBeNull();
   });
 });

@@ -21,16 +21,17 @@ const LENGTHS: [Length, string][] = [
 const TARGET = "3rem";
 const BUTTON = { padding: "0.75rem", fontSize: "1rem", minHeight: TARGET };
 const CHOICE = { display: "flex", alignItems: "center", gap: "0.5rem", minHeight: TARGET };
+const UNREACHABLE = "Couldn't reach the server. Try again.";
 
 export default function Home() {
   const [home, setHome] = useState<Summary>();
   const [length, setLength] = useState<Length>("25");
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<string>();
   const [starting, setStarting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/api/home").then((result) => (result.ok ? setHome(result.data) : setFailed(true)));
+    api.get("/api/home").then((result) => (result.ok ? setHome(result.data) : setError(UNREACHABLE)));
   }, []);
 
   async function start(action: Action) {
@@ -39,7 +40,9 @@ export default function Home() {
     // The session screen reads the plan from router state, so it needn't fetch it again.
     if (result.ok) navigate(`/sessions/${result.data.id}`, { state: { plan: result.data, length } });
     else {
-      setFailed(true);
+      // Continue is enabled until Home loads, so it can reach a finished course.
+      const done = result.error.kind === "http" && result.error.status === 409;
+      setError(done ? "All lessons are done, so there's nothing to continue." : UNREACHABLE);
       setStarting(false);
     }
   }
@@ -47,7 +50,7 @@ export default function Home() {
   return (
     <main>
       <h1>Woodshed</h1>
-      {failed && <p role="alert">Couldn't reach the server. Try again.</p>}
+      {error && <p role="alert">{error}</p>}
       {home && (
         <ul>
           <li>{home.streak}-day streak</li>
