@@ -16,6 +16,11 @@ const passage = (id: string, title: string, unlocked: boolean): Passage => ({
   artist: null,
   kind: "song",
   chords: ["C", "F", "G"],
+  shapes: [
+    [5, 5, 3],
+    [10, 10, 8],
+    [12, 12, 10],
+  ],
   lesson: "major",
   unlocked,
 });
