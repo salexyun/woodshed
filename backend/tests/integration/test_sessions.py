@@ -116,6 +116,18 @@ def test_continue_is_the_next_lesson_only(client, db, onboarded):
     assert session["steps"][0]["card"] in CHALLENGE_CARDS
 
 
+def test_continue_is_409_and_creates_no_session_when_every_lesson_is_done(client, db):
+    qualities = ["major", "minor", "diminished", "augmented"]
+    onboarding = ANSWERS | {
+        "claimed_qualities": qualities,
+        "checks": dict.fromkeys(qualities, PASS),
+    }
+    assert client.post("/api/onboarding", json=onboarding).status_code == 201
+    response = client.post("/api/sessions", json={"action": "continue", "length": "25"})
+    assert response.status_code == 409
+    assert db.scalars(select(PracticeSession)).all() == []
+
+
 def test_pick_a_song_plays_the_passage_with_a_challenge_card(client, db, onboarded):
     session = start(client, "pick_a_song", passage="la-bamba")
     assert steps(session) == [
