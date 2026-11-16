@@ -221,16 +221,20 @@ def start_session(body: schemas.NewSession, db: Db, now: Now) -> schemas.Plan:
     last_session = db.scalars(
         select(Rating.item_id).where(Rating.session_id == last).order_by(Rating.id)
     )
+    inputs = (
+        body.action,
+        [scheduler.Item(i.id, i.due_at, i.box, i.last_rated_at) for i in rows],
+        _completed_lessons(db),
+        list(last_session),
+        now,
+        passage_item_id(body.passage) if body.passage else None,
+    )
+    # A ValueError here is the player's bad request (a 422), not a failed span.
     try:
-        with tracer.start_as_current_span("planner.plan"):
-            steps = planner.plan(
-                body.action,
-                [scheduler.Item(i.id, i.due_at, i.box, i.last_rated_at) for i in rows],
-                _completed_lessons(db),
-                list(last_session),
-                now,
-                passage_item_id(body.passage) if body.passage else None,
-            )
+        with tracer.start_as_current_span(
+            "planner.plan", record_exception=False, set_status_on_exception=False
+        ):
+            steps = planner.plan(*inputs)
     except ValueError as e:
         raise HTTPException(422, str(e)) from None
     if not steps:

@@ -40,6 +40,12 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(line)
 
 
+def _not_healthz(record: logging.LogRecord) -> bool:
+    # Uvicorn's access args are (client, method, path, version, status); others pass.
+    args = record.args
+    return not (isinstance(args, tuple) and len(args) > 2 and args[2] == "/healthz")
+
+
 def _export_otlp() -> None:
     # Service name, endpoint and intervals come from the standard OTEL_* variables.
     tracer_provider = TracerProvider()
@@ -64,7 +70,7 @@ def setup(app: FastAPI) -> None:
         logger.handlers.clear()
         logger.propagate = True
     # Docker's healthcheck hits /healthz every 2 s; its access lines are noise.
-    logging.getLogger("uvicorn.access").addFilter(lambda r: r.args[2] != "/healthz")
+    logging.getLogger("uvicorn.access").addFilter(_not_healthz)
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
         _export_otlp()
     # Only the stable HTTP conventions label request metrics with http.route.
