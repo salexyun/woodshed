@@ -165,6 +165,28 @@ def test_planning_and_scheduling_have_their_own_spans(journey, spans, route, wor
     )
 
 
+def planner_span(spans):
+    return next(s for s in spans.get_finished_spans() if s.name == "planner.plan")
+
+
+def test_planner_span_covers_only_planning(journey, spans):
+    span_id = planner_span(spans).context.span_id
+    assert not any(
+        s.parent and s.parent.span_id == span_id
+        for s in spans.get_finished_spans()
+        if s.attributes.get("db.system") == "postgresql"
+    )
+
+
+def test_a_rejected_plan_leaves_the_planner_span_unset(client, spans):
+    assert client.post("/api/onboarding", json=ANSWERS).status_code == 201
+    body = {"action": "pick_a_song", "length": "25"}
+    assert client.post("/api/sessions", json=body).status_code == 422
+    span = planner_span(spans)
+    assert span.status.status_code.name == "UNSET"
+    assert not span.events
+
+
 def test_sessions_started_are_counted_by_action(journey, metric_reader):
     started = counted(metric_reader, "woodshed_sessions_started")
     assert started == [({"action": "today"}, 1)]
@@ -271,6 +293,12 @@ def test_healthz_requests_log_no_access_line():
 @pytest.mark.parametrize("path", ["/api/home", "/"])
 def test_other_requests_log_an_access_line(path):
     assert f"GET {path} HTTP/1.1" in access_logged(path)
+
+
+@pytest.mark.parametrize("args", [(), ({"path": "/healthz"},)])
+def test_access_records_without_uvicorns_args_are_logged(args, caplog):
+    logging.getLogger("uvicorn.access").info("probe %s", *args)
+    assert any(r.name == "uvicorn.access" for r in caplog.records)
 
 
 def test_logs_panel_has_no_healthz_filter():
