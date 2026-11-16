@@ -144,9 +144,42 @@ function mockApi(plan: Schemas["Plan"], { rated = [] as string[], finished_at = 
   });
 }
 
+// The review is the item right before the lesson rates it again, so a duplicate looks like the lesson's first shape.
+const reviewRightBeforeItsLesson: Schemas["Plan"] = {
+  id: SESSION_ID,
+  steps: [
+    { kind: "review", id: "shape:major:0", root: "C", card: null },
+    { kind: "review", id: "shape:diminished:0", root: "A", card: null },
+    { kind: "lesson", id: "diminished", card: CARD, root: null },
+  ],
+};
+
+// Not in the generated types until the backend adds the field.
+type Sent = { item_id: string; position?: number };
+
+const lostResponse = () => Promise.resolve({ ok: false, error: { kind: "network" } });
+
+// Stores ratings like the server, once per position, and loses the response to the first rating of `lost`.
+function serveRatings(plan: Schemas["Plan"], lost: string) {
+  const rated: string[] = [];
+  const positions = new Set<number>();
+  mockApi(plan, { rated });
+  const respond = post.getMockImplementation()!;
+  post.mockImplementation((path, init) => {
+    if (path !== "/api/sessions/{id}/ratings") return respond(path, init);
+    const { item_id, position } = init?.body as Sent;
+    if (position === undefined || !positions.has(position)) rated.push(item_id);
+    if (position !== undefined) positions.add(position);
+    if (item_id !== lost) return respond(path, init);
+    lost = "";
+    return lostResponse();
+  });
+}
+
 const callsTo = (path: string) => post.mock.calls.filter(([p]) => p === path);
 const ratedItems = () =>
   callsTo("/api/sessions/{id}/ratings").map(([, init]) => (init?.body as Schemas["NewRating"]).item_id);
+const sentPositions = () => callsTo("/api/sessions/{id}/ratings").map(([, init]) => (init?.body as Sent).position);
 
 const button = (name: RegExp) => screen.findAllByRole("button", { name }).then((all) => all[0]);
 const reveal = async () => fireEvent.click(await button(/reveal/i));
@@ -219,7 +252,7 @@ describe("Review cards", () => {
       expect(callsTo("/api/sessions/{id}/ratings")).toEqual([
         [
           "/api/sessions/{id}/ratings",
-          { path: { id: SESSION_ID }, body: { item_id: "shape:minor:1", rating: "challenging" } },
+          { path: { id: SESSION_ID }, body: { item_id: "shape:minor:1", rating: "challenging", position: 0 } },
         ],
       ]),
     );
@@ -540,10 +573,62 @@ describe("Resume", () => {
     await screen.findByText("Same chords, reggae offbeat strum.");
   });
 
+  it("resumes a lesson at its root position after a retried review of that shape right before it", async () => {
+    plan = reviewRightBeforeItsLesson;
+    serveRatings(plan, "shape:diminished:0");
+    const { unmount } = start();
+    await reviewFirstCard();
+    await reveal();
+    fireEvent.click(await button(/^easy$/i));
+    await screen.findByRole("alert");
+    await rate();
+    await screen.findByText("Rate the root position");
+
+    unmount();
+    start();
+
+    await screen.findByText("Rate the root position");
+  });
+
   it("sends the player home when the session is finished", async () => {
     mockApi(plan, { rated: FULL_SESSION_ITEMS, finished_at: "2026-11-16T09:25:00Z" });
     start();
 
     await screen.findByRole("heading", { name: "Home" });
+  });
+});
+
+describe("Rating positions", () => {
+  it("numbers each rating by its place in the plan", async () => {
+    start();
+
+    await playThroughLesson();
+
+    expect(sentPositions()).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("sends the same position when a rating is retried after a lost response", async () => {
+    post.mockImplementationOnce(lostResponse);
+    start();
+    await reveal();
+    fireEvent.click(await button(/^easy$/i));
+    await screen.findByRole("alert");
+
+    await rate();
+    await reviewFirstCard();
+
+    expect(sentPositions()).toEqual([0, 0, 1]);
+  });
+
+  it.each([
+    ["once", FULL_SESSION_ITEMS.slice(0, 3)],
+    ["twice", [...FULL_SESSION_ITEMS.slice(0, 3), "shape:diminished:0"]],
+  ])("continues from the next position on resume when a shape was saved %s", async (_, rated) => {
+    mockApi(plan, { rated });
+    start();
+
+    await rate();
+
+    expect(sentPositions()).toEqual([3]);
   });
 });

@@ -51,7 +51,7 @@ services:
       # Ingests a zero at each counter's start, so increase() counts its first events.
       - --enable-feature=created-timestamp-zero-ingestion
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
 
   loki:
     image: grafana/loki:3.7.10
@@ -79,7 +79,7 @@ services:
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./observability/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/woodshed.yaml:ro
       - ./observability/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/woodshed.yaml:ro
