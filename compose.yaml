@@ -3,6 +3,11 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql://woodshed:woodshed@db:5432/woodshed
+      OTEL_SERVICE_NAME: woodshed
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4318
+      OTEL_METRIC_EXPORT_INTERVAL: 10000
+      # The healthcheck below polls every 2 s; keep it out of traces and metrics.
+      OTEL_PYTHON_FASTAPI_EXCLUDED_URLS: healthz
     ports:
       - "8000:8000"
     depends_on:
@@ -31,6 +36,45 @@ services:
       # Integration tests use their own database so they never touch dev data.
       - source: create-test-db
         target: /docker-entrypoint-initdb.d/create-test-db.sql
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: --config=/etc/collector.yaml
+    volumes:
+      - ./observability/collector.yaml:/etc/collector.yaml:ro
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-otlp-receiver
+      # Ingests a zero at each counter's start, so increase() counts its first events.
+      - --enable-feature=created-timestamp-zero-ingestion
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:3.7.10
+
+  tempo:
+    image: grafana/tempo:2.10.10
+    command: -config.file=/etc/tempo.yaml
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+
+  grafana:
+    image: grafana/grafana:12.4.15
+    environment:
+      # Local only: open Grafana without a login.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./observability/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/woodshed.yaml:ro
+      - ./observability/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/woodshed.yaml:ro
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
 
 configs:
   create-test-db:
