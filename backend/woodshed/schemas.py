@@ -58,6 +58,7 @@ class Passage(BaseModel):
     artist: str | None
     kind: Literal["song", "exercise"]
     chords: list[str]
+    shapes: list[tuple[int, int, int]]
     lesson: Quality
     unlocked: bool
 
