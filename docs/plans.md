@@ -312,7 +312,7 @@ One command, `make test`, runs every suite.
 | Suite | Tool | Covers |
 | --- | --- | --- |
 | Unit | pytest | `domain/`: triad positions, Leitner transitions and due dates, root rotation, streak and week rules, plan building, onboarding placement |
-| Integration | pytest + httpx against a real Postgres (Docker) | API flows end to end: onboarding → home → the key journey → progress; error cases; migrations |
+| Integration | pytest + httpx2 (Starlette `TestClient`) against a real Postgres (Docker) | API flows end to end: onboarding → home → the key journey → progress; error cases; migrations |
 | Frontend | Vitest + Testing Library | Components (`Fretboard`, `RatingButtons`, `ReviewCard`, `Timer`) and the session screen against a mocked API |
 
 Each task's acceptance criteria define the cases its tests must cover.

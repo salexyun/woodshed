@@ -1,7 +1,9 @@
 """Telemetry (§11): traces, metrics and JSON logs, and no free text in any of them."""
 
+import io
 import json
 import logging
+from pathlib import Path
 from typing import Annotated
 
 import pytest
@@ -27,6 +29,9 @@ ANSWERS = {
     "timezone": "Europe/Berlin",
 }
 HTTP_DURATIONS = {"http.server.duration", "http.server.request.duration"}
+DASHBOARD = (
+    Path(__file__).parents[3] / "observability/grafana/dashboards/practice-journey.json"
+)
 JOURNEY = ["/api/sessions", "/api/sessions/{id}/ratings", "/api/sessions/{id}/finish"]
 
 
@@ -232,3 +237,37 @@ def test_database_error_detail_stays_out_of_spans(constraint_violation, spans, l
 def test_database_error_detail_stays_out_of_logs(constraint_violation, leak):
     assert constraint_violation
     assert leak not in str(constraint_violation)
+
+
+def access_logged(path: str) -> str:
+    """What the app's stdout handlers print for uvicorn's access line for `path`."""
+    stream = io.StringIO()
+    handlers = [
+        h
+        for h in logging.getLogger().handlers
+        if type(h) is logging.StreamHandler and h.formatter in app_formatters()
+    ]
+    assert handlers
+    originals = [h.setStream(stream) for h in handlers]
+    try:
+        # Shaped like uvicorn's access record: (client, method, path, version, status).
+        logging.getLogger("uvicorn.access").info(
+            '%s - "%s %s HTTP/%s" %d', "127.0.0.1:5000", "GET", path, "1.1", 200
+        )
+    finally:
+        for h, original in zip(handlers, originals):
+            h.setStream(original)
+    return stream.getvalue()
+
+
+def test_healthz_requests_log_no_access_line():
+    assert access_logged("/healthz") == ""
+
+
+@pytest.mark.parametrize("path", ["/api/home", "/"])
+def test_other_requests_log_an_access_line(path):
+    assert f"GET {path} HTTP/1.1" in access_logged(path)
+
+
+def test_logs_panel_has_no_healthz_filter():
+    assert "healthz" not in DASHBOARD.read_text()
