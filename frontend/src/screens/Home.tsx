@@ -17,7 +17,10 @@ const LENGTHS: [Length, string][] = [
   ["25", "25 min"],
   ["open", "Open-ended"],
 ];
-const BUTTON = { padding: "0.75rem", fontSize: "1rem" };
+// Radios and buttons share one tap-target height, so each is as easy to hit.
+const TARGET = "3rem";
+const BUTTON = { padding: "0.75rem", fontSize: "1rem", minHeight: TARGET };
+const CHOICE = { display: "flex", alignItems: "center", gap: "0.5rem", minHeight: TARGET };
 
 export default function Home() {
   const [home, setHome] = useState<Summary>();
@@ -61,7 +64,7 @@ export default function Home() {
       <fieldset>
         <legend>Length</legend>
         {LENGTHS.map(([value, label]) => (
-          <label key={value}>
+          <label key={value} style={CHOICE}>
             <input type="radio" name="length" checked={length === value} onChange={() => setLength(value)} />
             {label}
           </label>
