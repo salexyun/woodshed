@@ -1,0 +1,54 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: responder
+    receivers:
+      - uid: responder
+        type: webhook
+        settings:
+          # The on-call responder (§11); compose sets the default.
+          url: $RESPONDER_URL
+
+policies:
+  - orgId: 1
+    receiver: responder
+    group_by: [alertname]
+    # The responder starts the on-call agent, so don't hold the first notification.
+    group_wait: 10s
+
+groups:
+  - orgId: 1
+    name: user-impact
+    folder: Woodshed
+    interval: 1m
+    rules:
+      - uid: sessions-failing
+        title: Practice sessions failing
+        condition: B
+        data:
+          # 5xx ratio on /api/sessions* over 5 minutes, only once there are at least 3 requests.
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              instant: true
+              expr: >-
+                (sum(increase(http_server_request_duration_seconds_count{http_route=~"/api/sessions.*", http_response_status_code=~"5.."}[5m] anchored)) or vector(0))
+                / (sum(increase(http_server_request_duration_seconds_count{http_route=~"/api/sessions.*"}[5m] anchored)) >= 3)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+        # Quiet traffic means nothing is failing.
+        noDataState: OK
+        # A monitoring outage isn't user impact: don't page the responder, and don't resolve an open incident.
+        execErrState: KeepLast
+        for: 0s
+        dashboardUid: woodshed-journey
+        panelId: 4
+        annotations:
+          summary: Players can't start, rate or finish a practice session.
