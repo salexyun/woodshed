@@ -13,6 +13,9 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --locked --no-dev
 COPY backend/ ./
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
+# Last, so a new SHA doesn't invalidate the cached layers above.
+ARG GIT_SHA
+ENV GIT_SHA=$GIT_SHA
 EXPOSE 8000
 USER nobody
 # Render sets PORT; locally it defaults to 8000.

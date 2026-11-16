@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -26,7 +27,8 @@ def healthz(session: Annotated[Session, Depends(get_session)]) -> dict[str, str]
         session.execute(text("SELECT 1"))
     except OperationalError:
         raise HTTPException(503, "database unreachable") from None
-    return {"status": "ok"}
+    # The deploy smoke test polls this until it reports the SHA it just deployed.
+    return {"status": "ok", "version": os.environ.get("GIT_SHA") or "unknown"}
 
 
 def serve_spa(app: FastAPI, dist: Path) -> None:
