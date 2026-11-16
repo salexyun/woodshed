@@ -34,8 +34,8 @@ groups:
             model:
               instant: true
               expr: >-
-                (sum(increase(http_server_request_duration_seconds_count{http_route=~"/api/sessions.*", http_response_status_code=~"5.."}[5m])) or vector(0))
-                / (sum(increase(http_server_request_duration_seconds_count{http_route=~"/api/sessions.*"}[5m])) >= 3)
+                (sum(increase(http_server_request_duration_seconds_count{http_route=~"/api/sessions.*", http_response_status_code=~"5.."}[5m] anchored)) or vector(0))
+                / (sum(increase(http_server_request_duration_seconds_count{http_route=~"/api/sessions.*"}[5m] anchored)) >= 3)
           - refId: B
             datasourceUid: __expr__
             model:
@@ -45,7 +45,8 @@ groups:
                 - evaluator: { type: gt, params: [0.05] }
         # Quiet traffic means nothing is failing.
         noDataState: OK
-        execErrState: Error
+        # A monitoring outage isn't user impact: don't page the responder, and don't resolve an open incident.
+        execErrState: KeepLast
         for: 0s
         dashboardUid: woodshed-journey
         panelId: 4
