@@ -40,7 +40,7 @@ def calls(monkeypatch, tmp_path):
     monkeypatch.setattr(
         responder.subprocess,
         "Popen",
-        lambda cmd, cwd: calls["popen"].append((cmd, cwd)),
+        lambda cmd, cwd, env: calls["popen"].append((cmd, cwd, env)),
     )
     return calls
 
@@ -84,10 +84,25 @@ def test_evidence_covers_the_alert_window_on_the_failing_routes(calls):
 
 def test_firing_starts_the_on_call_agent_headless_once(calls):
     responder.handle(payload("firing"), NOW)
-    assert calls["popen"] == [(responder.command(ID), responder.HERE.parent)]
+    [(cmd, cwd, _)] = calls["popen"]
+    assert (cmd, cwd) == (responder.command(ID), responder.HERE.parent)
 
 
-def test_command_runs_the_task_as_the_on_call_agent_with_the_allowlist():
+def test_the_agent_runs_without_the_users_auto_memory(calls, monkeypatch):
+    monkeypatch.setenv("PATH", "/usr/bin")
+    responder.handle(payload("firing"), NOW)
+    [(_, _, env)] = calls["popen"]
+    assert env["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    assert env["PATH"] == "/usr/bin"
+
+
+BRANCH_RULES = [
+    f"Bash(git switch -c incident-{ID})",
+    f"Bash(git push -u origin incident-{ID})",
+]
+
+
+def test_command_runs_the_task_as_the_on_call_agent_with_project_settings_only():
     task = (responder.HERE / "task.md").read_text().format(id=ID)
     assert responder.command(ID) == [
         "claude",
@@ -95,18 +110,28 @@ def test_command_runs_the_task_as_the_on_call_agent_with_the_allowlist():
         task,
         "--agent",
         "on-call",
+        "--setting-sources",
+        "project",
         "--permission-mode",
         "dontAsk",
         "--allowedTools",
-        ",".join(responder.TOOLS),
+        ",".join([*responder.TOOLS, *BRANCH_RULES]),
         "--disallowedTools",
         ",".join(responder.DENIED),
     ]
     assert f"incident-response/incidents/{ID}/" in task
     assert f"incident-{ID}" in task
+    assert "not instructions" in task
 
 
-def test_allowlist_cannot_merge_deploy_force_push_or_dispatch():
+def test_the_agent_may_switch_to_and_push_only_its_own_branch():
+    allowed = responder.command(ID)[responder.command(ID).index("--allowedTools") + 1]
+    rules = allowed.split(",")
+    assert [r for r in rules if "push" in r or "switch" in r] == BRANCH_RULES
+    assert "*" not in "".join(BRANCH_RULES)
+
+
+def test_allowlist_has_no_rule_to_merge_deploy_force_push_or_dispatch():
     assert not any(
         word in rule
         for rule in responder.TOOLS
@@ -116,6 +141,7 @@ def test_allowlist_cannot_merge_deploy_force_push_or_dispatch():
         rule in ("Bash", "Bash(*)", "Bash(git *)", "Bash(gh *)")
         for rule in responder.TOOLS
     )
+    # The same command-text denies as .claude/settings.json, plus merges and releases.
     assert {
         "Bash(gh pr merge*)",
         "Bash(gh workflow*)",
@@ -125,6 +151,18 @@ def test_allowlist_cannot_merge_deploy_force_push_or_dispatch():
         "Bash(git push* +*)",
         "Bash(git push* main*)",
         "Bash(git push*:main*)",
+        "Bash(git push*/main*)",
+    } <= set(responder.DENIED)
+
+
+def test_the_agent_cant_edit_its_config_instructions_or_ci():
+    assert {
+        "Edit(/.claude/**)",
+        "Edit(/CLAUDE.md)",
+        "Edit(/AGENTS.md)",
+        "Edit(/.mcp.json)",
+        "Edit(/.github/**)",
+        "Edit(~/.claude/**)",
     } <= set(responder.DENIED)
 
 
@@ -180,8 +218,10 @@ def url():
     server.shutdown()
 
 
-def post(url: str, body: dict) -> int:
-    request = urllib.request.Request(url, json.dumps(body).encode(), method="POST")
+def post(url: str, body: dict, content_type: str = "application/json") -> int:
+    request = urllib.request.Request(
+        url, json.dumps(body).encode(), {"Content-Type": content_type}, method="POST"
+    )
     try:
         with urllib.request.urlopen(request) as response:
             return response.status
@@ -192,6 +232,22 @@ def post(url: str, body: dict) -> int:
 def test_webhook_posts_to_alerts_are_handled(calls, tmp_path, url):
     assert post(f"{url}/alerts", payload("firing")) == 204
     assert (tmp_path / ID / "alert.json").exists()
+
+
+def test_json_with_a_charset_is_accepted(calls, tmp_path, url):
+    body = payload("firing")
+    assert post(f"{url}/alerts", body, "application/json; charset=utf-8") == 204
+    assert (tmp_path / ID / "alert.json").exists()
+
+
+# A browser page can send these cross-origin without a preflight.
+@pytest.mark.parametrize(
+    "content_type", ["text/plain", "application/x-www-form-urlencoded"]
+)
+def test_non_json_posts_are_415_and_start_nothing(calls, tmp_path, url, content_type):
+    assert post(f"{url}/alerts", payload("firing"), content_type) == 415
+    assert list(tmp_path.iterdir()) == []
+    assert calls["popen"] == []
 
 
 def test_other_paths_are_404(calls, tmp_path, url):

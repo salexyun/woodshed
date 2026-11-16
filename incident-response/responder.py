@@ -25,7 +25,8 @@ TRACEQL = (
 )
 LOGQL = '{service_name="woodshed"} | severity_text="ERROR"'
 
-# The agent may diagnose, test, commit, push its own branch and open a PR: nothing else.
+# Rules match command text, so these narrow what the agent does rather than sandbox it:
+# the hard stops are on GitHub (docs/team.md). command() adds its own branch's rules.
 TOOLS = [
     "Read",
     "Glob",
@@ -38,10 +39,8 @@ TOOLS = [
     "Bash(uv run --directory backend pytest *)",
     "Bash(uv run --directory backend ruff *)",
     "Bash(git branch --show-current)",
-    "Bash(git switch -c incident-*)",
     "Bash(git add *)",
     "Bash(git commit *)",
-    "Bash(git push -u origin incident-*)",
     "Bash(gh pr create *)",
 ]
 # Deny wins over allow, so these hold even if a rule above matches.
@@ -55,7 +54,17 @@ DENIED = [
     "Bash(git push* +*)",
     "Bash(git push* main*)",
     "Bash(git push*:main*)",
+    "Bash(git push*/main*)",
+    # Edit rules cover Write too. Agent config, instructions and CI stay human-owned.
+    "Edit(/.claude/**)",
+    "Edit(/CLAUDE.md)",
+    "Edit(/AGENTS.md)",
+    "Edit(/.mcp.json)",
+    "Edit(/.github/**)",
+    "Edit(~/.claude/**)",
 ]
+# The user's auto-memory isn't the on-call agent's to read.
+AGENT_ENV = {"CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"}
 
 
 def _get(base: str, path: str, **params: str | int) -> dict:
@@ -83,17 +92,26 @@ def evidence(start: datetime, end: datetime) -> dict:
 
 def command(id: str) -> list[str]:
     prompt = (HERE / "task.md").read_text().format(id=id)
+    branch = f"incident-{id}"
+    tools = [
+        *TOOLS,
+        f"Bash(git switch -c {branch})",
+        f"Bash(git push -u origin {branch})",
+    ]
     return [
         "claude",
         "-p",
         prompt,
         "--agent",
         "on-call",
+        # Only the repo's settings: user-level allow rules and hooks don't apply.
+        "--setting-sources",
+        "project",
         # Anything outside TOOLS is denied rather than prompted for.
         "--permission-mode",
         "dontAsk",
         "--allowedTools",
-        ",".join(TOOLS),
+        ",".join(tools),
         "--disallowedTools",
         ",".join(DENIED),
     ]
@@ -131,13 +149,16 @@ def handle(payload: dict, now: datetime) -> None:
     (incident / "alert.json").write_text(json.dumps(payload, indent=2))
     packet = evidence(start - WINDOW, now)
     (incident / "evidence.json").write_text(json.dumps(packet, indent=2))
-    subprocess.Popen(command(id), cwd=HERE.parent)
+    subprocess.Popen(command(id), cwd=HERE.parent, env=os.environ | AGENT_ENV)
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if self.path != "/alerts":
             return self.send_error(404)
+        # A browser page can't post JSON here without a CORS preflight, which fails.
+        if self.headers.get_content_type() != "application/json":
+            return self.send_error(415)
         body = self.rfile.read(int(self.headers["Content-Length"]))
         handle(json.loads(body), datetime.now(UTC))
         self.send_response(204)
