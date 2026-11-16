@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 @contextmanager
 def _primary_message_only() -> Iterator[None]:
-    # Postgres's DETAIL quotes row values (the cue) and the error text reaches spans and
-    # logs. Trimming here, below the psycopg instrumentation, covers every path at once.
+    # A constraint violation's DETAIL quotes the row (the cue), and the error text
+    # reaches spans and logs. Trimming below the psycopg instrumentation cleans it for
+    # all of them. Data errors (e.g. 22P02) put the value in the primary message, and
+    # errors raised by commit() (deferred constraints) bypass the cursor.
     try:
         yield
     except psycopg.Error as e:
