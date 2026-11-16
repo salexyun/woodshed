@@ -50,7 +50,7 @@ Backend dependencies go through `uv` (`uv add <pkg>`). Frontend dependencies go 
 3. Write tests from the acceptance criteria first, then the code.
 4. Run `make lint` and `make test` before pushing.
 5. Open a PR titled like the issue, with `Closes #<issue>` in the body. Tick each acceptance criterion in the PR body.
-6. The reviewer agent comments its verdict. A human merges. Agents never merge.
+6. The reviewer agent comments its verdict. Once it approves and CI is green, an agent or the human merges with a merge commit, in dependency order.
 
 Commit messages: imperative mood and ≤ 72 characters, with the issue referenced, e.g. `Add Leitner transitions (#7)`.
 
