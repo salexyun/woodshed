@@ -5,7 +5,7 @@ from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 
 from woodshed.models import Base
 
@@ -48,3 +48,18 @@ def test_downgrade_base_drops_every_table(alembic, engine):
     command.upgrade(alembic, "head")
     command.downgrade(alembic, "base")
     assert tables(engine) == set()
+
+
+def test_sessions_from_the_previous_release_load_without_steps(alembic, engine, client):
+    command.downgrade(alembic, "0001")
+    with engine.begin() as conn:
+        session_id = conn.execute(
+            text(
+                "INSERT INTO session (action, length, started_at)"
+                " VALUES ('today', '25', now()) RETURNING id"
+            )
+        ).scalar_one()
+    command.upgrade(alembic, "head")
+    response = client.get(f"/api/sessions/{session_id}")
+    assert response.status_code == 200
+    assert (response.json()["steps"], response.json()["rated"]) == ([], [])
