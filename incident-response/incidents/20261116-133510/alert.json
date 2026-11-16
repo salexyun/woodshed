@@ -1,0 +1,49 @@
+{
+  "receiver": "responder",
+  "status": "firing",
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "Practice sessions failing",
+        "grafana_folder": "Woodshed"
+      },
+      "annotations": {
+        "summary": "Players can't start, rate or finish a practice session."
+      },
+      "startsAt": "2026-11-16T13:35:10Z",
+      "endsAt": "0001-01-01T00:00:00Z",
+      "generatorURL": "http://localhost:3000/alerting/grafana/sessions-failing/view?orgId=1",
+      "fingerprint": "1b2417d14bcf4038",
+      "silenceURL": "http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dsessions-failing&orgId=1",
+      "dashboardURL": "",
+      "panelURL": "",
+      "ruleUID": "sessions-failing",
+      "values": {
+        "A": 0.5384615384615384,
+        "B": 1
+      },
+      "valueString": "[ var='A' labels={} type='query' value=0.5384615384615384 ], [ var='B' labels={} type='threshold' value=1 ]",
+      "orgId": 1
+    }
+  ],
+  "groupLabels": {
+    "alertname": "Practice sessions failing"
+  },
+  "commonLabels": {
+    "alertname": "Practice sessions failing",
+    "grafana_folder": "Woodshed"
+  },
+  "commonAnnotations": {
+    "summary": "Players can't start, rate or finish a practice session."
+  },
+  "externalURL": "http://localhost:3000/",
+  "appVersion": "12.4.15",
+  "version": "1",
+  "groupKey": "{}:{alertname=\"Practice sessions failing\"}",
+  "truncatedAlerts": 0,
+  "orgId": 1,
+  "title": "[FIRING:1] Practice sessions failing (Woodshed)",
+  "state": "alerting",
+  "message": "**Firing**\n\nValue: A=0.5384615384615384, B=1\nLabels:\n - alertname = Practice sessions failing\n - grafana_folder = Woodshed\nAnnotations:\n - summary = Players can't start, rate or finish a practice session.\nSource: http://localhost:3000/alerting/grafana/sessions-failing/view?orgId=1\nSilence: http://localhost:3000/alerting/silence/new?alertmanager=grafana&matcher=__alert_rule_uid__%3Dsessions-failing&orgId=1\n"
+}

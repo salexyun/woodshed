@@ -14,7 +14,7 @@ test: frontend/node_modules
 	cd frontend && npm exec --no -- vitest run
 
 lint: frontend/node_modules
-	cd backend && uv run ruff check && uv run ruff format --check
+	cd backend && uv run ruff check . ../incident-response && uv run ruff format --check . ../incident-response
 	cd frontend && npm exec --no -- tsc --noEmit
 
 # openapi-typescript needs TypeScript 5's compiler API, which TypeScript 7 dropped,
