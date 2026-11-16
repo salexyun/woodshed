@@ -48,7 +48,7 @@ flowchart LR
 
 ## Run it
 
-You need only Docker (with Compose).
+You need only Docker (with Compose). Ports 8000, 5432, 3000, 3100, 3200 and 9090 must be free.
 
 ```sh
 git clone https://github.com/salexyun/woodshed.git
@@ -56,11 +56,13 @@ cd woodshed
 make up    # or, without make: docker compose up --build --wait
 ```
 
-This builds the image and starts Postgres, the app and the telemetry stack, runs migrations and waits until they are healthy. Open <http://localhost:8000> for the app and <http://localhost:3000> for Grafana. Data lives in the `pgdata` volume. Stop with `docker compose down`; add `-v` to delete the data too.
+This builds the image and starts Postgres, the app and the telemetry stack, runs migrations and waits until they are healthy. Open <http://localhost:8000> for the app and <http://localhost:3000> for Grafana (give it a few seconds after `make up` returns). Data lives in the `pgdata` volume. Stop with `docker compose down`; add `-v` to delete the data too.
 
 The app reads `DATABASE_URL` and, optionally, `PORT` (default 8000). It exports traces, metrics and logs over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (the standard `OTEL_*` variables apply); without it, it logs JSON lines to stderr only.
 
 ## Test it
+
+Besides Docker, you need [uv](https://docs.astral.sh/uv/) (it installs Python 3.12) and Node.js 24 with npm. `make test` installs the dependencies on first run.
 
 ```sh
 docker compose up -d --wait db   # integration tests use a real Postgres
@@ -98,7 +100,7 @@ Example runs: [dev deploy](https://github.com/salexyun/woodshed/actions/runs/438
 
 The app is instrumented with OpenTelemetry and exports to a Collector, which feeds Prometheus (metrics), Loki (logs) and Tempo (traces). Grafana shows all three. Everything is provisioned by `make up` from [`observability/`](observability).
 
-- **Traces:** FastAPI and SQLAlchemy spans, plus spans for planning and scheduling.
+- **Traces:** FastAPI and Postgres query spans (traced at the psycopg driver, as SQLAlchemy's instrumentation doesn't support SQLAlchemy 2.1), plus spans for planning and scheduling.
 - **Metrics:** HTTP request count and duration by route and status, `woodshed_sessions_started_total{action}`, `woodshed_sessions_finished_total` and `woodshed_ratings_total{rating}`.
 - **Logs:** JSON lines that carry `trace_id` and `span_id` for logs inside a request (uvicorn's unhandled-exception line doesn't yet, [#105](https://github.com/salexyun/woodshed/issues/105)).
 - **Privacy:** no request bodies, no free text (the player's cue) and no database error details reach telemetry. Tests in [`test_telemetry.py`](backend/tests/integration/test_telemetry.py) check this.
