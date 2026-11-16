@@ -1,7 +1,7 @@
 import random
 from collections.abc import Collection
 from dataclasses import asdict
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
@@ -22,7 +22,6 @@ from woodshed.content import (
 from woodshed.db import get_session
 from woodshed.domain import planner, scheduler, streak
 from woodshed.domain.placement import LESSON_ORDER, place
-from woodshed.domain.scheduler import INTERVAL_DAYS
 from woodshed.domain.theory import parse_chord, shape
 from woodshed.models import Item, PracticeSession, Profile, Rating
 
@@ -79,7 +78,7 @@ def onboard(answers: schemas.Onboarding, db: Db, now: Now) -> Profile:
     )
     db.add(profile)
     db.add_all(
-        _new_item(id, box, now + timedelta(days=INTERVAL_DAYS[box - 1]), now)
+        _new_item(id, box, scheduler.due_at(box, now), now)
         for id, box in placement.items.items()
     )
     # Placing a quality counts as completing its lesson.

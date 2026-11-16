@@ -2,8 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from woodshed.domain import scheduler
-from woodshed.domain.scheduler import Item, due, rate, review_root
+from woodshed.domain.scheduler import Item, due, due_at, rate, review_root
 
 NOW = datetime(2026, 10, 26, 12, tzinfo=UTC)
 INTERVAL_DAYS = {1: 1, 2: 3, 3: 7, 4: 14, 5: 30}
@@ -30,7 +29,7 @@ def test_rate_moves_box_and_sets_due_at_from_new_box_interval(box, rating, new_b
 
 @pytest.mark.parametrize(("box", "days"), INTERVAL_DAYS.items())
 def test_due_at_adds_box_interval_to_now(box, days):
-    assert scheduler.due_at(box, NOW) == NOW + timedelta(days=days)
+    assert due_at(box, NOW) == NOW + timedelta(days=days)
 
 
 def test_easy_in_box_5_stays_in_box_5_for_30_days():
